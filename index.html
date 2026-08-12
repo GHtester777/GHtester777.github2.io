@@ -294,6 +294,30 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- AI Chat Coach Section -->
+                <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col h-[500px]">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-lg">Networking Coach Chat</h4>
+                    </div>
+                    <p class="text-slate-500 text-sm mb-4">Ask anything about your strategy, a specific contact, or how to write an email.</p>
+                    
+                    <div id="coach-chat-window" class="flex-grow overflow-y-auto bg-slate-50 rounded-lg p-4 mb-4 border border-slate-200 flex flex-col space-y-4 custom-scrollbar">
+                        <div class="bg-indigo-100 text-indigo-900 self-start p-3 rounded-lg rounded-tl-none max-w-[85%] text-sm shadow-sm">
+                            Hi! I'm your embedded AI networking coach. How can I help you today?
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <input type="text" id="coach-chat-input" class="flex-grow border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="e.g., How do I follow up with a CTO?" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                        <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold transition-colors flex items-center justify-center shadow-md shadow-indigo-200">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div id="view-vault" class="hidden animate-in fade-in duration-500 space-y-6">
@@ -378,12 +402,16 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Quality (1-5)</label>
-                    <input id="input-quality" type="range" min="1" max="5" value="3" class="w-full accent-emerald-600">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Quality (1-5)</label>
+                        <button type="button" onclick="autoRateConnection()" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Let AI evaluate the synergy">✨ Auto-Rate</button>
+                    </div>
+                    <input id="input-quality" type="range" min="1" max="5" value="3" class="w-full accent-emerald-600" oninput="document.getElementById('auto-rate-reason').classList.add('hidden')">
                     <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-bold">
                         <span>Low Fit</span>
                         <span>Synergy</span>
                     </div>
+                    <div id="auto-rate-reason" class="text-[10px] text-indigo-600 mt-2 hidden font-medium bg-indigo-50 p-2.5 rounded border border-indigo-100 leading-relaxed shadow-sm"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
@@ -393,6 +421,17 @@
                         <option>Follow-up</option>
                         <option>Polite Neutral</option>
                     </select>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Notes / Drafts</label>
+                        <div class="flex space-x-1">
+                            <button type="button" onclick="generateContextualAI('icebreaker')" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Generate Icebreaker">✨ Icebreaker</button>
+                            <button type="button" onclick="generateContextualAI('agenda')" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Generate Coffee Chat Agenda">✨ Agenda</button>
+                            <button type="button" onclick="generateContextualAI('followup')" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Generate Follow-up">✨ Follow-up</button>
+                        </div>
+                    </div>
+                    <textarea id="input-notes" rows="3" placeholder="Jot down notes or let AI generate a draft here..." class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-slate-700"></textarea>
                 </div>
                 <button id="modal-save-btn" onclick="addConnection()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200 mt-2">
                     Save to Log
@@ -409,8 +448,6 @@
         // --- DATA & STATE ---
         const GOAL = 70;
         const TARGET_DAILY = 5;
-        // Using a dynamic start date based on today for better UX, or fixed if preferred.
-        // Keeping the fixed date from the prompt but formatting dynamically.
         const START_DATE = new Date('2026-08-08T00:00:00');
         
         let connections = []; // Will be loaded from Firebase
@@ -730,6 +767,7 @@
             document.getElementById('input-quality').value = 3;
             document.getElementById('input-status').selectedIndex = 0;
             document.getElementById('input-platform').selectedIndex = 0;
+            document.getElementById('input-notes').value = '';
             
             document.getElementById('modal-overlay').classList.remove('hidden'); 
         }
@@ -753,6 +791,7 @@
             document.getElementById('input-platform').value = conn.platform;
             document.getElementById('input-quality').value = conn.quality;
             document.getElementById('input-status').value = conn.status;
+            document.getElementById('input-notes').value = conn.notes || '';
 
             document.getElementById('modal-overlay').classList.remove('hidden');
         }
@@ -764,6 +803,7 @@
             const platform = document.getElementById('input-platform').value;
             const quality = parseInt(document.getElementById('input-quality').value);
             const status = document.getElementById('input-status').value;
+            const notes = document.getElementById('input-notes').value.trim();
 
             if (!dateStr) {
                 showMessage("Please select a date.");
@@ -785,6 +825,7 @@
                     connections[index].platform = platform;
                     connections[index].quality = quality;
                     connections[index].status = status;
+                    connections[index].notes = notes; // Add notes to update
                     
                     // Sort connections by date after edit
                     connections.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -802,7 +843,8 @@
                     details: details,
                     platform: platform,
                     quality: quality,
-                    status: status
+                    status: status,
+                    notes: notes // Add notes to new connection
                 };
 
                 connections.push(newConn);
@@ -914,7 +956,8 @@
                                         details: String(getVal('details') || getVal('companyrole') || getVal('company') || 'N/A').trim(),
                                         platform: String(getVal('platform') || 'LinkedIn').trim(),
                                         quality: parseInt(getVal('quality')) || 3,
-                                        status: String(getVal('status') || 'Awaiting Reply').trim()
+                                        status: String(getVal('status') || 'Awaiting Reply').trim(),
+                                        notes: String(getVal('notes') || '').trim() // Support importing notes
                                     });
                                     importedCount++;
                                 }
@@ -971,6 +1014,10 @@
         window.generateAIDraft = generateAIDraft;
         window.copyAIDraft = copyAIDraft;
         window.generateInsights = generateInsights;
+        window.generateContextualAI = generateContextualAI; // Expose new function
+
+        window.autoRateConnection = autoRateConnection;
+        window.sendChatMessage = sendChatMessage;
 
         // --- AI INTEGRATION (GEMINI API) ---
         const GEMINI_API_KEY = ""; // System will inject key here
@@ -1110,6 +1157,176 @@ ${JSON.stringify(connections.slice(-5).map(c => ({name: c.name, role: c.details,
             } catch (error) {
                 contentEl.innerHTML = `<span class="text-rose-400">> ERROR: Failed to connect to AI analysis core. Try again later.</span>`;
             }
+        }
+
+        async function generateContextualAI(type) {
+            const name = document.getElementById('input-name').value.trim();
+            const role = document.getElementById('input-details').value.trim();
+            const notesField = document.getElementById('input-notes');
+
+            if (!name) {
+                showMessage("Please enter a Contact Name first so AI knows who to write to!");
+                return;
+            }
+
+            const originalVal = notesField.value;
+            notesField.value = "✨ AI is thinking...";
+            notesField.disabled = true;
+
+            const safeName = name || "this person";
+            const safeRole = role || "their company";
+
+            let prompt = "";
+            const sys = "You are a professional networking assistant. Provide a concise, highly usable text snippet. No conversational filler, just the exact output requested. Use formatting like bullet points if appropriate.";
+
+            if (type === 'icebreaker') prompt = `Write a friendly, 1-sentence icebreaker to send to ${safeName} who is at ${safeRole}.`;
+            if (type === 'agenda') prompt = `Write a short bulleted agenda (3 points max) for a 15-minute virtual coffee chat with ${safeName} (${safeRole}).`;
+            if (type === 'followup') prompt = `Write a short, polite 2-sentence follow-up message to ${safeName} (${safeRole}) checking in since they haven't replied.`;
+
+            try {
+                const res = await callGemini(prompt, sys);
+                const prefix = originalVal ? originalVal + "\n\n" : "";
+                const sectionTitle = type === 'icebreaker' ? "--- AI Icebreaker ---" : type === 'agenda' ? "--- AI Agenda ---" : "--- AI Follow-up ---";
+                notesField.value = prefix + sectionTitle + "\n" + res.trim();
+            } catch (e) {
+                notesField.value = originalVal;
+                showMessage("Failed to generate AI response. Make sure the API is connected.");
+            } finally {
+                notesField.disabled = false;
+            }
+        }
+
+        // --- NEW AI FEATURES ---
+        
+        // Structured Output using JSON Schema to Auto-Rate a connection
+        async function autoRateConnection() {
+            const name = document.getElementById('input-name').value.trim();
+            const details = document.getElementById('input-details').value.trim();
+            const platform = document.getElementById('input-platform').value;
+            const notes = document.getElementById('input-notes').value.trim();
+
+            if (!name && !details && !notes) {
+                showMessage("Please provide some details or notes first for the AI to analyze.");
+                return;
+            }
+
+            const btn = document.querySelector('button[onclick="autoRateConnection()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Thinking...';
+            btn.disabled = true;
+
+            const payload = {
+                contents: [{ parts: [{ text: `Evaluate this networking connection.\nName: ${name}\nRole/Company: ${details}\nPlatform: ${platform}\nNotes: ${notes}` }] }],
+                systemInstruction: { parts: [{ text: "You are an expert networking coach. Rate the potential synergy and value of this professional connection on a scale of 1 to 5. Return JSON with 'score' (integer 1-5) and 'reason' (string, max 20 words)." }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            score: { type: "INTEGER" },
+                            reason: { type: "STRING" }
+                        },
+                        required: ["score", "reason"]
+                    }
+                }
+            };
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0].content?.parts[0]?.text) {
+                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    document.getElementById('input-quality').value = data.score;
+                    const reasonEl = document.getElementById('auto-rate-reason');
+                    reasonEl.innerHTML = `<strong>AI Rating (${data.score}/5):</strong> ${data.reason}`;
+                    reasonEl.classList.remove('hidden');
+                } else {
+                    throw new Error("Invalid response format");
+                }
+            } catch (e) {
+                console.error("Auto-rate error:", e);
+                showMessage("Failed to auto-rate connection.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Multi-turn Chat Coach 
+        let coachChatHistory = [];
+
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('coach-chat-input');
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            // Add user message to UI
+            appendChatMessage(text, 'user');
+            inputEl.value = '';
+
+            // Add user message to memory
+            coachChatHistory.push({ role: 'user', parts: [{ text }] });
+
+            // Show typing indicator
+            const typingId = appendChatMessage('...', 'coach');
+
+            // Inject current application state as context
+            const contextStr = `Current networking progress: ${connections.length}/${GOAL} connections logged. Recent connections: ${JSON.stringify(connections.slice(-3).map(c => c.name + " (" + c.details + ")"))}.`;
+            
+            const payload = {
+                contents: coachChatHistory,
+                systemInstruction: { parts: [{ text: `You are an expert networking and career coach embedded in a user's tracking app. Keep answers concise, actionable, and friendly. Limit responses to a few short paragraphs. Use basic markdown formatting (bullet points, bold). Context context: ${contextStr}` }] }
+            };
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0].content?.parts[0]?.text) {
+                    const reply = result.candidates[0].content.parts[0].text;
+                    // Add model reply to memory
+                    coachChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                    
+                    document.getElementById(typingId).remove();
+                    appendChatMessage(reply, 'coach');
+                } else {
+                    throw new Error("Invalid response from Gemini");
+                }
+            } catch (e) {
+                console.error("Chat error:", e);
+                document.getElementById(typingId).innerText = 'Sorry, I encountered an error. Please check your connection.';
+                coachChatHistory.pop(); // Remove the user message from history so they can retry without breaking turn order
+            }
+        }
+
+        function appendChatMessage(text, sender) {
+            const windowEl = document.getElementById('coach-chat-window');
+            const id = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
+            const isUser = sender === 'user';
+            
+            const alignClass = isUser ? 'self-end' : 'self-start';
+            const colorClass = isUser ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-indigo-100 text-indigo-900 rounded-tl-none';
+            
+            // Basic markdown parsing for bold and newlines
+            const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+            // Using string concatenation to avoid template literal escapes in diff
+            const msgHtml = '<div id="' + id + '" class="' + alignClass + ' ' + colorClass + ' p-3 rounded-lg max-w-[85%] text-sm shadow-sm animate-in fade-in slide-in-from-bottom-2">' + formattedText + '</div>';
+            
+            windowEl.insertAdjacentHTML('beforeend', msgHtml);
+            windowEl.scrollTop = windowEl.scrollHeight;
+            return id;
         }
 
         // Start the app!
