@@ -244,6 +244,10 @@
             </div>
             <div class="p-6 space-y-4">
                 <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
+                    <input id="input-date" type="date" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700">
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contact Name</label>
                     <input id="input-name" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none">
                 </div>
@@ -602,6 +606,13 @@
             document.getElementById('modal-title').innerText = 'New Connection Entry';
             document.getElementById('modal-save-btn').innerText = 'Save to Log';
             
+            // Set default date to today
+            const now = new Date();
+            const d = now.getDate().toString().padStart(2, '0');
+            const m = (now.getMonth() + 1).toString().padStart(2, '0');
+            const y = now.getFullYear();
+            document.getElementById('input-date').value = `${y}-${m}-${d}`;
+
             document.getElementById('input-name').value = '';
             document.getElementById('input-details').value = '';
             document.getElementById('input-quality').value = 3;
@@ -624,6 +635,7 @@
             document.getElementById('modal-title').innerText = 'Edit Connection Entry';
             document.getElementById('modal-save-btn').innerText = 'Update Connection';
 
+            document.getElementById('input-date').value = conn.date;
             document.getElementById('input-name').value = conn.name;
             document.getElementById('input-details').value = conn.details !== 'N/A' ? conn.details : '';
             document.getElementById('input-platform').value = conn.platform;
@@ -634,11 +646,17 @@
         }
 
         function addConnection() {
+            const dateStr = document.getElementById('input-date').value;
             const name = document.getElementById('input-name').value.trim();
             const details = document.getElementById('input-details').value.trim() || 'N/A';
             const platform = document.getElementById('input-platform').value;
             const quality = parseInt(document.getElementById('input-quality').value);
             const status = document.getElementById('input-status').value;
+
+            if (!dateStr) {
+                showMessage("Please select a date.");
+                return;
+            }
 
             if (!name) {
                 showMessage("Please enter a contact name.");
@@ -649,25 +667,25 @@
                 // Update
                 const index = connections.findIndex(c => c.id === editConnectionId);
                 if (index !== -1) {
+                    connections[index].date = dateStr;
                     connections[index].name = name;
                     connections[index].details = details;
                     connections[index].platform = platform;
                     connections[index].quality = quality;
                     connections[index].status = status;
+                    
+                    // Sort connections by date after edit
+                    connections.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
                     showMessage("Connection successfully updated.");
                 }
             } else {
                 // Add
                 const newId = connections.length > 0 ? Math.max(...connections.map(c => c.id)) + 1 : 1;
-                // Pad date string to ensure format YYYY-MM-DD
-                const now = new Date();
-                const d = now.getDate().toString().padStart(2, '0');
-                const m = (now.getMonth() + 1).toString().padStart(2, '0');
-                const y = now.getFullYear();
                 
                 const newConn = {
                     id: newId,
-                    date: `${y}-${m}-${d}`,
+                    date: dateStr,
                     name: name,
                     details: details,
                     platform: platform,
@@ -676,6 +694,9 @@
                 };
 
                 connections.push(newConn);
+                // Sort connections by date after adding
+                connections.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
                 showMessage("Connection successfully added to log.");
             }
             
