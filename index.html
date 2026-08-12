@@ -302,7 +302,7 @@
                     <p class="text-slate-500">Manage your networking progress data securely.</p>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
                         <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -311,6 +311,18 @@
                         <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Download an Excel file containing all your logged connections. Perfect for importing into Notion, or keeping a hard offline copy.</p>
                         <button onclick="exportData()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
                             <span>Download .xlsx Backup</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
+                        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-lg">Import Local Backup</h4>
+                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Upload a previously downloaded .xlsx backup file to restore or merge your networking data.</p>
+                        <input type="file" id="import-file" accept=".xlsx, .xls" class="hidden" onchange="importData(event)">
+                        <button onclick="document.getElementById('import-file').click()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                            <span>Upload .xlsx File</span>
                         </button>
                     </div>
 
@@ -833,6 +845,104 @@
             showMessage("Backup file downloaded successfully!");
         }
 
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    // cellDates: true allows SheetJS to parse Excel date numbers as JS Date objects automatically
+                    const workbook = window.XLSX.read(data, {type: 'array', cellDates: true});
+                    
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert sheet back to JSON objects, providing "" for empty cells
+                    const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    
+                    if (jsonData && jsonData.length > 0) {
+                        let maxId = connections.length > 0 ? Math.max(...connections.map(c => c.id)) : 0;
+                        let importedCount = 0;
+                        
+                        jsonData.forEach(row => {
+                            // Helper to find case and space insensitive keys
+                            const getVal = (keyName) => {
+                                const foundKey = Object.keys(row).find(k => k.toLowerCase().replace(/[^a-z]/g, '') === keyName.toLowerCase());
+                                return foundKey ? row[foundKey] : "";
+                            };
+
+                            const rawDate = getVal('date');
+                            const name = getVal('name') || getVal('contact');
+
+                            if (rawDate && name) {
+                                let formattedDate = rawDate;
+                                
+                                // Robust Date parsing
+                                if (rawDate instanceof Date) {
+                                    const yyyy = rawDate.getFullYear();
+                                    const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
+                                    const dd = String(rawDate.getDate()).padStart(2, '0');
+                                    formattedDate = `${yyyy}-${mm}-${dd}`;
+                                } else if (typeof rawDate === 'number') {
+                                    // Fallback for Excel epoch numbers if cellDates misses it
+                                    const jsDate = new Date(Math.round((rawDate - 25569) * 86400000));
+                                    const yyyy = jsDate.getUTCFullYear();
+                                    const mm = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+                                    const dd = String(jsDate.getUTCDate()).padStart(2, '0');
+                                    formattedDate = `${yyyy}-${mm}-${dd}`;
+                                } else if (typeof rawDate === 'string') {
+                                    const d = new Date(rawDate);
+                                    if (!isNaN(d.getTime())) {
+                                        const yyyy = d.getFullYear();
+                                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                        const dd = String(d.getDate()).padStart(2, '0');
+                                        formattedDate = `${yyyy}-${mm}-${dd}`;
+                                    }
+                                }
+
+                                // Check for existing records to avoid exact duplicates
+                                const isDuplicate = connections.some(c => c.date === formattedDate && c.name.toLowerCase() === String(name).trim().toLowerCase());
+
+                                if (!isDuplicate) {
+                                    maxId++;
+                                    connections.push({
+                                        id: maxId,
+                                        date: formattedDate,
+                                        name: String(name).trim(),
+                                        details: String(getVal('details') || getVal('companyrole') || getVal('company') || 'N/A').trim(),
+                                        platform: String(getVal('platform') || 'LinkedIn').trim(),
+                                        quality: parseInt(getVal('quality')) || 3,
+                                        status: String(getVal('status') || 'Awaiting Reply').trim()
+                                    });
+                                    importedCount++;
+                                }
+                            }
+                        });
+
+                        if (importedCount > 0) {
+                            connections.sort((a, b) => new Date(a.date) - new Date(b.date));
+                            updateUI();
+                            saveToCloud();
+                            showMessage(`Successfully imported ${importedCount} new connections!`);
+                        } else {
+                            showMessage("No new valid connections found (or all were duplicates).");
+                        }
+                    } else {
+                        showMessage("No valid data found in the Excel file.");
+                    }
+                } catch (error) {
+                    console.error("Import error:", error);
+                    showMessage("Failed to import file. Make sure it's a valid Excel backup.");
+                }
+                
+                event.target.value = '';
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
         function clearAllData() {
             if (connections.length === 0) {
                 showMessage("Vault is already empty.");
@@ -855,6 +965,7 @@
         window.addConnection = addConnection;
         window.removeConnection = removeConnection;
         window.exportData = exportData;
+        window.importData = importData;
         window.clearAllData = clearAllData;
 
         window.generateAIDraft = generateAIDraft;
