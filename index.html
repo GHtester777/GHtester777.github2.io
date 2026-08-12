@@ -6,6 +6,8 @@
     <title>SMART Networking Goal Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Adding SheetJS for Excel export functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         
@@ -208,9 +210,9 @@
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         </div>
                         <h4 class="font-bold text-slate-800 text-lg">Export Local Backup</h4>
-                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Download a JSON file containing all your logged connections. Perfect for importing into Excel, Notion, or keeping a hard offline copy.</p>
+                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Download an Excel file containing all your logged connections. Perfect for importing into Notion, or keeping a hard offline copy.</p>
                         <button onclick="exportData()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
-                            <span>Download .json Backup</span>
+                            <span>Download .xlsx Backup</span>
                         </button>
                     </div>
 
@@ -721,13 +723,15 @@
                 showMessage("No data available to export yet.");
                 return;
             }
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(connections, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `NetGrowth_Backup_${new Date().toISOString().split('T')[0]}.json`);
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
+            
+            // Use SheetJS to convert the JSON connections array into a proper Excel worksheet
+            const worksheet = window.XLSX.utils.json_to_sheet(connections);
+            const workbook = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(workbook, worksheet, "Connections");
+            
+            // Trigger the download of the file
+            window.XLSX.writeFile(workbook, `NetGrowth_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+            
             showMessage("Backup file downloaded successfully!");
         }
 
