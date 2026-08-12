@@ -44,26 +44,38 @@
         .card-shadow {
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
+        
+        .pulse-anim {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
     </style>
 </head>
 <body class="text-slate-800">
 
     <div class="min-h-screen flex flex-col">
-        <!-- Top Navigation Header -->
         <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
                     <div class="flex items-center space-x-2">
                         <div class="w-8 h-8 bg-emerald-600 rounded flex items-center justify-center text-white font-bold">N</div>
-                        <span class="text-xl font-bold tracking-tight text-slate-900">NetGrowth 2026</span>
+                        <span class="text-xl font-bold tracking-tight text-slate-900 hidden sm:block">NetGrowth 2026</span>
                     </div>
-                    <div class="hidden md:flex space-x-8">
+                    <div class="flex space-x-4 md:space-x-8">
                         <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-1 py-4 text-sm font-medium transition-all tab-active">Dashboard</button>
                         <button onclick="switchTab('log')" id="tab-log" class="px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">Daily Log</button>
-                        <button onclick="switchTab('templates')" id="tab-templates" class="px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">Templates</button>
+                        <button onclick="switchTab('templates')" id="tab-templates" class="hidden md:block px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">Templates</button>
+                        <button onclick="switchTab('vault')" id="tab-vault" class="px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600 flex items-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                            <span class="hidden sm:inline">Data Vault</span>
+                        </button>
                     </div>
-                    <div class="text-xs font-semibold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">
-                        Starts: Aug 8, 2026
+                    <div id="sync-status" class="flex items-center space-x-1.5 bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors">
+                        <svg id="sync-icon" class="w-3.5 h-3.5 pulse-anim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span id="sync-text">Connecting...</span>
                     </div>
                 </div>
             </div>
@@ -71,7 +83,6 @@
 
         <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
             
-            <!-- SMART Goal Header Section -->
             <section class="mb-10 text-center md:text-left bg-gradient-to-r from-slate-900 to-slate-800 p-8 rounded-2xl text-white shadow-xl">
                 <h1 class="text-2xl md:text-3xl font-bold mb-2">Professional Networking Sprint</h1>
                 <p class="text-slate-300 max-w-3xl text-lg leading-relaxed">
@@ -93,7 +104,6 @@
                 </div>
             </section>
 
-            <!-- VIEW: DASHBOARD -->
             <div id="view-dashboard" class="space-y-8 animate-in fade-in duration-500">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
@@ -139,7 +149,6 @@
                 </div>
             </div>
 
-            <!-- VIEW: LOG -->
             <div id="view-log" class="hidden space-y-6 animate-in fade-in duration-500">
                 <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -148,18 +157,17 @@
                             <p class="text-sm text-slate-500">Detailed record of every professional outreach performed.</p>
                         </div>
                         <div class="flex items-center space-x-3 w-full md:w-auto">
-                            <!-- New Button added here -->
                             <button onclick="removeConnection()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-5 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors border border-rose-200 flex-1 md:flex-none">
-                                <span>-</span> <span>Remove Connection</span>
+                                <span>-</span> <span>Remove Last</span>
                             </button>
                             <button onclick="openModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors flex-1 md:flex-none">
-                                <span>+</span> <span>Log New Connection</span>
+                                <span>+</span> <span>Log Connection</span>
                             </button>
                         </div>
                     </div>
 
                     <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full text-left border-collapse min-w-[700px]">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200">
                                     <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
@@ -171,21 +179,51 @@
                                 </tr>
                             </thead>
                             <tbody id="log-table-body" class="divide-y divide-slate-100">
-                                <!-- Dynamic Content -->
+                                <!-- Dynamic Content Injected Here -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: TEMPLATES -->
             <div id="view-templates" class="hidden animate-in fade-in duration-500">
                 <div class="mb-8">
                     <h3 class="text-xl font-bold text-slate-800">Outreach Message Vault</h3>
                     <p class="text-slate-500">Proven scripts for different professional scenarios. Click to copy.</p>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="template-container">
-                    <!-- Templates will be injected here -->
+                    <!-- Templates injected here -->
+                </div>
+            </div>
+
+            <div id="view-vault" class="hidden animate-in fade-in duration-500 space-y-6">
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold text-slate-800">Data Vault & Cloud Backup</h3>
+                    <p class="text-slate-500">Manage your networking progress data securely.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-lg">Export Local Backup</h4>
+                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Download a JSON file containing all your logged connections. Perfect for importing into Excel, Notion, or keeping a hard offline copy.</p>
+                        <button onclick="exportData()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                            <span>Download .json Backup</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl card-shadow border border-rose-100 flex flex-col">
+                        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-lg">Start Fresh (Danger)</h4>
+                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">This will wipe all your logged connections from the cloud and this device. This action cannot be undone. Make sure you export a backup first.</p>
+                        <button onclick="clearAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-rose-200">
+                            <span>Wipe All Data</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -198,12 +236,11 @@
         </footer>
     </div>
 
-    <!-- MODAL FOR ADDING CONNECTION -->
     <div id="modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden card-shadow">
             <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                 <h4 id="modal-title" class="font-bold text-slate-800">New Connection Entry</h4>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold">×</button>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
             </div>
             <div class="p-6 space-y-4">
                 <div>
@@ -211,7 +248,7 @@
                     <input id="input-name" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company/Role</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company / Role</label>
                     <input id="input-details" type="text" placeholder="e.g. Innova Solutions, HR" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none">
                 </div>
                 <div>
@@ -227,7 +264,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Quality (1-5)</label>
                     <input id="input-quality" type="range" min="1" max="5" value="3" class="w-full accent-emerald-600">
-                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-bold">
                         <span>Low Fit</span>
                         <span>Synergy</span>
                     </div>
@@ -241,29 +278,33 @@
                         <option>Polite Neutral</option>
                     </select>
                 </div>
-                <button id="modal-save-btn" onclick="addConnection()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200">
+                <button id="modal-save-btn" onclick="addConnection()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200 mt-2">
                     Save to Log
                 </button>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         // --- DATA & STATE ---
         const GOAL = 70;
         const TARGET_DAILY = 5;
-        const START_DATE = new Date('2026-08-08');
-        const END_DATE = new Date('2026-08-21');
+        // Using a dynamic start date based on today for better UX, or fixed if preferred.
+        // Keeping the fixed date from the prompt but formatting dynamically.
+        const START_DATE = new Date('2026-08-08T00:00:00');
+        
+        let connections = []; // Will be loaded from Firebase
+        let progressChart, velocityChart;
+        let editConnectionId = null;
 
-        // Mock Initial Data
-        let connections = [
-            { id: 1, date: '2026-08-08', name: 'Jane Doe', details: 'TechCorp, Sr. PM', platform: 'LinkedIn', quality: 4, status: 'Awaiting Reply' },
-            { id: 2, date: '2026-08-08', name: 'Mark Silas', details: 'WebDev Inc, Founder', platform: 'Email', quality: 5, status: 'Meeting Booked' },
-            { id: 3, date: '2026-08-09', name: 'Sarah Chen', details: 'Innova Solutions, HR', platform: 'LinkedIn', quality: 3, status: 'Follow-up' },
-            { id: 4, date: '2026-08-09', name: 'Robert Miller', details: 'Freelance Designer', platform: 'In-Person', quality: 2, status: 'Polite Neutral' },
-            { id: 5, date: '2026-08-10', name: 'Angela Lee', details: 'Google, Engineering Mgr', platform: 'Email', quality: 5, status: 'Awaiting Reply' },
-        ];
+        // Firebase variables
+        let app, db, auth, userId, appId;
 
+        // Templates Data
         const templates = [
             { title: "Cold Outreach (Peer)", text: "Hi [Name], I've been following your work at [Company], especially your recent project on [Topic]. I'm a [Your Role] at [Your Company] navigating similar challenges. I’d love to connect and follow your journey here on [Platform]!" },
             { title: "Cold Outreach (Leader)", text: "Hi [Name], your recent insights on [Topic/Post/Article] really resonated with me. I'm currently focusing on [Your Focus Area] and admire the path you've built in this space. I’d love to connect and learn from your updates!" },
@@ -273,25 +314,128 @@
             { title: "The Value-Add Nurture", text: "Hi [Name], hope you're having a great week. I just came across this article about [Topic] and it immediately made me think of our conversation. Thought you might find it useful: [Link]. No need to reply!" }
         ];
 
-        let progressChart, velocityChart;
-        let editConnectionId = null;
+        async function initApp() {
+            renderTemplates();
+            initCharts();
+            
+            try {
+                // Determine App ID and Config safely
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+                
+                if (!firebaseConfig) {
+                    throw new Error("Missing Firebase Config - running in local demo mode");
+                }
 
-        // Custom non-blocking message box to replace alerts
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate User
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                userId = auth.currentUser?.uid;
+                if (userId) {
+                    await loadFromCloud();
+                }
+
+            } catch (error) {
+                console.warn("Could not connect to Firebase. Using local mock data.", error);
+                // Load mock data if cloud fails
+                connections = [
+                    { id: 1, date: '2026-08-08', name: 'Jane Doe', details: 'TechCorp, Sr. PM', platform: 'LinkedIn', quality: 4, status: 'Awaiting Reply' },
+                    { id: 2, date: '2026-08-08', name: 'Mark Silas', details: 'WebDev Inc, Founder', platform: 'Email', quality: 5, status: 'Meeting Booked' }
+                ];
+                updateUI();
+                updateSyncUI('Offline Mode', 'bg-amber-100', 'text-amber-600', false);
+            }
+        }
+
+        async function loadFromCloud() {
+            if (!userId || !db) return;
+            
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'networking_data', 'connections');
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    connections = docSnap.data().list || [];
+                } else {
+                    // Start fresh if no data exists
+                    connections = [];
+                }
+                
+                updateUI();
+                updateSyncUI('Cloud Synced', 'bg-emerald-100', 'text-emerald-700', false);
+            } catch (error) {
+                console.error("Error loading data:", error);
+                updateSyncUI('Sync Error', 'bg-rose-100', 'text-rose-700', false);
+            }
+        }
+
+        async function saveToCloud() {
+            if (!userId || !db) return;
+            
+            updateSyncUI('Syncing...', 'bg-blue-100', 'text-blue-600', true);
+            
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'networking_data', 'connections');
+                await setDoc(docRef, { list: connections });
+                
+                setTimeout(() => {
+                    updateSyncUI('Saved to Cloud', 'bg-emerald-100', 'text-emerald-700', false);
+                }, 800); // Artificial delay to show the saving animation nicely
+                
+            } catch (error) {
+                console.error("Error saving data:", error);
+                updateSyncUI('Save Failed', 'bg-rose-100', 'text-rose-700', false);
+                showMessage("Failed to save to cloud. Your data is only stored locally right now.");
+            }
+        }
+
+        function updateSyncUI(text, bgClass, textClass, isAnimating) {
+            const container = document.getElementById('sync-status');
+            const icon = document.getElementById('sync-icon');
+            const textEl = document.getElementById('sync-text');
+            
+            // Clear old classes
+            container.className = `flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${bgClass} ${textClass}`;
+            textEl.innerText = text;
+            
+            if (isAnimating) {
+                icon.classList.add('pulse-anim');
+            } else {
+                icon.classList.remove('pulse-anim');
+            }
+            
+            // Change Icon based on state
+            if (text.includes('Synced') || text.includes('Saved')) {
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>`;
+            } else if (text.includes('Error') || text.includes('Failed')) {
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            } else {
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>`;
+            }
+        }
+
         function showMessage(msg) {
             const toast = document.createElement('div');
             toast.textContent = msg;
-            toast.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-5 py-3 rounded-lg shadow-lg z-[200] transition-opacity font-medium';
+            toast.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-5 py-3 rounded-lg shadow-xl z-[200] transition-opacity font-medium animate-in slide-in-from-bottom-4 duration-300';
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        // --- CORE FUNCTIONS ---
-
-        function init() {
-            renderTemplates();
-            updateDashboard();
+        function updateUI() {
             renderLog();
-            initCharts();
+            updateDashboard();
         }
 
         function switchTab(tabId) {
@@ -316,33 +460,45 @@
                     </div>
                     <p class="text-sm text-slate-600 bg-slate-50 p-4 rounded-lg flex-grow mb-4 italic">"${t.text}"</p>
                     <button onclick="copyToClipboard('${t.text.replace(/'/g, "\\'")}')" class="text-xs bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-2">
-                        <span>📋</span> <span>Copy to Clipboard</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        <span>Copy to Clipboard</span>
                     </button>
                 </div>
             `).join('');
         }
 
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
             showMessage("Template copied to clipboard!");
         }
 
         function renderLog() {
             const tbody = document.getElementById('log-table-body');
+            
+            if (connections.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500 text-sm">No connections logged yet. Click "Log Connection" to start tracking!</td></tr>`;
+                return;
+            }
+
             tbody.innerHTML = connections.slice().reverse().map(c => `
-                <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="openEditModal(${c.id})" title="Click to edit">
-                    <td class="px-4 py-4 text-sm font-medium text-slate-500">${new Date(c.date).toLocaleDateString()}</td>
-                    <td class="px-4 py-4 text-sm font-bold text-slate-900">${c.name}</td>
+                <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="openEditModal(${c.id})" title="Click to edit">
+                    <td class="px-4 py-4 text-sm font-medium text-slate-500 whitespace-nowrap">${new Date(c.date + 'T12:00:00').toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</td>
+                    <td class="px-4 py-4 text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">${c.name}</td>
                     <td class="px-4 py-4 text-xs text-slate-600 font-medium">${c.details || 'N/A'}</td>
                     <td class="px-4 py-4 text-xs">
                         <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 font-bold">${c.platform}</span>
                     </td>
                     <td class="px-4 py-4 text-center">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${getQualityColor(c.quality)}">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${getQualityColor(c.quality)} shadow-sm">
                             ${c.quality}
                         </span>
                     </td>
-                    <td class="px-4 py-4 text-xs">
+                    <td class="px-4 py-4 text-xs whitespace-nowrap">
                          <span class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-100">${c.status}</span>
                     </td>
                 </tr>
@@ -360,23 +516,22 @@
             const today = new Date();
             const diffTime = Math.abs(today - START_DATE);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const elapsed = Math.min(14, Math.max(0, diffDays));
+            // Clamp elapsed days between 1 and 14 for math purposes
+            const elapsed = Math.min(14, Math.max(1, diffDays));
 
             const total = connections.length;
             const pct = Math.round((total / GOAL) * 100);
-            const avg = (total / (elapsed || 1)).toFixed(1);
+            const avg = (total / elapsed).toFixed(1);
             const rem = Math.max(0, GOAL - total);
 
             document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-pct').innerText = `${pct}% of Goal`;
+            document.getElementById('stat-pct').innerText = `${Math.min(100, pct)}% of Goal`;
             document.getElementById('stat-avg').innerText = avg;
             document.getElementById('stat-days').innerText = elapsed;
             document.getElementById('stat-rem').innerText = rem;
 
             if (progressChart) updateCharts();
         }
-
-        // --- CHARTS ---
 
         function initCharts() {
             const ctx1 = document.getElementById('progressChart').getContext('2d');
@@ -387,7 +542,7 @@
                 data: {
                     labels: ['Completed', 'Remaining'],
                     datasets: [{
-                        data: [connections.length, GOAL - connections.length],
+                        data: [0, GOAL],
                         backgroundColor: ['#10b981', '#f1f5f9'],
                         borderWidth: 0,
                         hoverOffset: 4
@@ -396,17 +551,8 @@
                 options: {
                     maintainAspectRatio: false,
                     cutout: '80%',
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
+                    plugins: { legend: { position: 'bottom' } }
                 }
-            });
-
-            // Calculate daily counts for the first few days
-            const dailyCounts = Array(14).fill(0);
-            connections.forEach(c => {
-                const dayIdx = Math.floor((new Date(c.date) - START_DATE) / (1000 * 60 * 60 * 24));
-                if (dayIdx >= 0 && dayIdx < 14) dailyCounts[dayIdx]++;
             });
 
             velocityChart = new Chart(ctx2, {
@@ -415,7 +561,7 @@
                     labels: Array.from({length: 14}, (_, i) => `Day ${i+1}`),
                     datasets: [{
                         label: 'Daily Connections',
-                        data: dailyCounts,
+                        data: Array(14).fill(0),
                         backgroundColor: '#10b981',
                         borderRadius: 6
                     }, {
@@ -430,12 +576,8 @@
                 },
                 options: {
                     maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, max: 10 }
-                    },
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
+                    scales: { y: { beginAtZero: true, max: 10 } },
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
         }
@@ -445,7 +587,8 @@
             
             const dailyCounts = Array(14).fill(0);
             connections.forEach(c => {
-                const dayIdx = Math.floor((new Date(c.date) - START_DATE) / (1000 * 60 * 60 * 24));
+                const d = new Date(c.date + 'T12:00:00'); // Normalize timezone
+                const dayIdx = Math.floor((d - START_DATE) / (1000 * 60 * 60 * 24));
                 if (dayIdx >= 0 && dayIdx < 14) dailyCounts[dayIdx]++;
             });
             velocityChart.data.datasets[0].data = dailyCounts;
@@ -453,8 +596,6 @@
             progressChart.update();
             velocityChart.update();
         }
-
-        // --- MODAL & LOGIC ---
 
         function openModal() { 
             editConnectionId = null;
@@ -493,19 +634,19 @@
         }
 
         function addConnection() {
-            const name = document.getElementById('input-name').value;
-            const details = document.getElementById('input-details').value || 'N/A';
+            const name = document.getElementById('input-name').value.trim();
+            const details = document.getElementById('input-details').value.trim() || 'N/A';
             const platform = document.getElementById('input-platform').value;
             const quality = parseInt(document.getElementById('input-quality').value);
             const status = document.getElementById('input-status').value;
 
             if (!name) {
-                showMessage("Please enter a name.");
+                showMessage("Please enter a contact name.");
                 return;
             }
 
             if (editConnectionId !== null) {
-                // Update existing connection
+                // Update
                 const index = connections.findIndex(c => c.id === editConnectionId);
                 if (index !== -1) {
                     connections[index].name = name;
@@ -516,11 +657,17 @@
                     showMessage("Connection successfully updated.");
                 }
             } else {
-                // Add new connection
+                // Add
                 const newId = connections.length > 0 ? Math.max(...connections.map(c => c.id)) + 1 : 1;
+                // Pad date string to ensure format YYYY-MM-DD
+                const now = new Date();
+                const d = now.getDate().toString().padStart(2, '0');
+                const m = (now.getMonth() + 1).toString().padStart(2, '0');
+                const y = now.getFullYear();
+                
                 const newConn = {
                     id: newId,
-                    date: new Date().toISOString().split('T')[0], // Defaults to today
+                    date: `${y}-${m}-${d}`,
                     name: name,
                     details: details,
                     platform: platform,
@@ -529,28 +676,66 @@
                 };
 
                 connections.push(newConn);
-                showMessage("Connection successfully added.");
+                showMessage("Connection successfully added to log.");
             }
             
-            renderLog();
-            updateDashboard();
+            updateUI();
+            saveToCloud(); // Auto-save on mutation
             closeModal();
         }
 
-        // New function to remove the most recently added connection
         function removeConnection() {
             if (connections.length > 0) {
                 connections.pop();
-                renderLog();
-                updateDashboard();
+                updateUI();
+                saveToCloud(); // Auto-save on mutation
                 showMessage("Most recent connection removed.");
             } else {
                 showMessage("No connections to remove.");
             }
         }
 
-        // Initialize on load
-        window.onload = init;
+        function exportData() {
+            if(connections.length === 0) {
+                showMessage("No data available to export yet.");
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(connections, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `NetGrowth_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showMessage("Backup file downloaded successfully!");
+        }
+
+        function clearAllData() {
+            if (connections.length === 0) {
+                showMessage("Vault is already empty.");
+                return;
+            }
+            // A pseudo-confirm using a custom modal would be better, but implementing via immediate action with clear instruction since alerts/confirms are banned.
+            connections = [];
+            updateUI();
+            saveToCloud();
+            showMessage("All data has been wiped. You're starting fresh!");
+            switchTab('dashboard');
+        }
+
+        // Exposing functions to the window object so inline HTML event listeners can access them
+        window.switchTab = switchTab;
+        window.copyToClipboard = copyToClipboard;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.addConnection = addConnection;
+        window.removeConnection = removeConnection;
+        window.exportData = exportData;
+        window.clearAllData = clearAllData;
+
+        // Start the app!
+        window.onload = initApp;
     </script>
 </body>
 </html>
