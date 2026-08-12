@@ -54,6 +54,21 @@
             0%, 100% { opacity: 1; }
             50% { opacity: .5; }
         }
+
+        .spinner {
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            -webkit-animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+          to { -webkit-transform: rotate(360deg); }
+        }
+        @-webkit-keyframes spin {
+          to { -webkit-transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -70,6 +85,7 @@
                         <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-1 py-4 text-sm font-medium transition-all tab-active">Dashboard</button>
                         <button onclick="switchTab('log')" id="tab-log" class="px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">Daily Log</button>
                         <button onclick="switchTab('templates')" id="tab-templates" class="hidden md:block px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">Templates</button>
+                        <button onclick="switchTab('ai')" id="tab-ai" class="hidden md:block px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">AI Insights</button>
                         <button onclick="switchTab('vault')" id="tab-vault" class="px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600 flex items-center space-x-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                             <span class="hidden sm:inline">Data Vault</span>
@@ -193,8 +209,90 @@
                     <h3 class="text-xl font-bold text-slate-800">Outreach Message Vault</h3>
                     <p class="text-slate-500">Proven scripts for different professional scenarios. Click to copy.</p>
                 </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 card-shadow mb-8 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <h3 class="text-xl font-bold text-slate-800">AI Outreach Draft Generator</h3>
+                        </div>
+                    </div>
+                    <p class="text-slate-600 mb-4">Provide some details about the person you want to connect with, and the AI will generate a personalized outreach message.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target Persona / Details</label>
+                            <textarea id="ai-draft-context" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="e.g. Senior PM at Google, wrote an article about AI in product management. I want to discuss their thoughts on the future of PM."></textarea>
+                        </div>
+                        <div class="flex flex-col">
+                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tone</label>
+                             <select id="ai-draft-tone" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none mb-4 text-sm">
+                                <option value="professional">Professional & Direct</option>
+                                <option value="friendly">Friendly & Casual</option>
+                                <option value="enthusiastic">Enthusiastic & Admiring</option>
+                             </select>
+                             <button id="btn-generate-draft" onclick="generateAIDraft()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2 mt-auto">
+                                <span>Generate Draft</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="ai-draft-result-container" class="hidden border border-indigo-100 bg-indigo-50/50 p-4 rounded-lg relative">
+                        <h4 class="text-xs font-bold text-indigo-800 uppercase mb-2">Generated Draft</h4>
+                        <p id="ai-draft-result" class="text-slate-700 text-sm whitespace-pre-wrap"></p>
+                        <button onclick="copyAIDraft()" class="absolute top-4 right-4 text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 px-2 py-1 rounded text-xs font-semibold shadow-sm flex items-center space-x-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="template-container">
                     <!-- Templates injected here -->
+                </div>
+            </div>
+
+            <div id="view-ai" class="hidden animate-in fade-in duration-500 space-y-6">
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold text-slate-800">AI Networking Insights</h3>
+                    <p class="text-slate-500">Analyze your networking data to discover patterns, get strategic advice, and generate follow-up recommendations.</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col h-full">
+                    <div class="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
+                         <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-lg">Network Analysis & Strategy</h4>
+                            <p class="text-slate-500 text-sm">Get AI-driven feedback on your progress and connection quality.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <button onclick="generateInsights('summary')" class="bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 font-semibold py-3 px-4 rounded-lg transition-colors flex flex-col items-center justify-center text-center group">
+                            <span class="mb-1 text-lg group-hover:scale-110 transition-transform">📊</span>
+                            <span class="text-sm">Progress Summary</span>
+                        </button>
+                        <button onclick="generateInsights('followups')" class="bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 font-semibold py-3 px-4 rounded-lg transition-colors flex flex-col items-center justify-center text-center group">
+                            <span class="mb-1 text-lg group-hover:scale-110 transition-transform">🔄</span>
+                            <span class="text-sm">Follow-up Strategy</span>
+                        </button>
+                        <button onclick="generateInsights('feedback')" class="bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 font-semibold py-3 px-4 rounded-lg transition-colors flex flex-col items-center justify-center text-center group">
+                            <span class="mb-1 text-lg group-hover:scale-110 transition-transform">🎯</span>
+                            <span class="text-sm">Quality Analysis</span>
+                        </button>
+                    </div>
+
+                    <div class="relative bg-slate-900 rounded-xl p-6 text-slate-200 min-h-[250px] shadow-inner font-mono text-sm leading-relaxed" id="ai-insight-terminal">
+                        <div class="flex items-center space-x-2 text-indigo-400 mb-4 border-b border-slate-700 pb-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="font-bold tracking-wider text-xs">AI_ASSISTANT_TERMINAL</span>
+                        </div>
+                        <div id="ai-insight-content" class="whitespace-pre-wrap">
+                            > Awaiting request... Click a button above to analyze your networking data.
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -758,6 +856,150 @@
         window.removeConnection = removeConnection;
         window.exportData = exportData;
         window.clearAllData = clearAllData;
+
+        window.generateAIDraft = generateAIDraft;
+        window.copyAIDraft = copyAIDraft;
+        window.generateInsights = generateInsights;
+
+        // --- AI INTEGRATION (GEMINI API) ---
+        const GEMINI_API_KEY = ""; // System will inject key here
+        
+        async function callGemini(prompt, systemInstruction = null) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+            };
+
+            if (systemInstruction) {
+                payload.systemInstruction = {
+                    parts: [{ text: systemInstruction }]
+                };
+            }
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0].content?.parts[0]?.text) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected Gemini response structure:", result);
+                    throw new Error("Failed to parse AI response.");
+                }
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                throw error;
+            }
+        }
+
+        // Feature 1: Generate Outreach Draft
+        async function generateAIDraft() {
+            const context = document.getElementById('ai-draft-context').value.trim();
+            const tone = document.getElementById('ai-draft-tone').value;
+            const btn = document.getElementById('btn-generate-draft');
+            const resultContainer = document.getElementById('ai-draft-result-container');
+            const resultText = document.getElementById('ai-draft-result');
+
+            if (!context) {
+                showMessage("Please provide details about the person you want to contact.");
+                return;
+            }
+
+            // UI feedback
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = `<div class="spinner w-4 h-4 mr-2"></div><span>Generating...</span>`;
+            btn.disabled = true;
+
+            const systemPrompt = `You are an expert career coach and networking strategist. Your task is to write a highly effective, concise, and personalized initial outreach message based on the user's provided context. Keep it under 150 words. Do not include subject lines. Output only the message content.`;
+            const userPrompt = `Write an outreach message based on this context: "${context}". The tone should be ${tone}.`;
+
+            try {
+                const draft = await callGemini(userPrompt, systemPrompt);
+                
+                resultText.innerText = draft;
+                resultContainer.classList.remove('hidden');
+                
+                // Animate entrance
+                resultContainer.classList.add('animate-in', 'fade-in', 'slide-in-from-top-4');
+            } catch (error) {
+                showMessage("Failed to generate draft. Please try again later.");
+            } finally {
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        }
+
+        function copyAIDraft() {
+            const text = document.getElementById('ai-draft-result').innerText;
+            if (text) {
+                copyToClipboard(text);
+            }
+        }
+
+        // Feature 2: Generate Insights based on local data
+        async function generateInsights(type) {
+            const contentEl = document.getElementById('ai-insight-content');
+            
+            if (connections.length === 0) {
+                contentEl.innerHTML = `<span class="text-amber-400">> ERROR: Insufficient data. Log some connections first before requesting analysis.</span>`;
+                return;
+            }
+
+            contentEl.innerHTML = `<span class="text-indigo-300">> Analyzing networking data</span><span class="animate-pulse">...</span>`;
+
+            // Prepare data summary for the prompt
+            const total = connections.length;
+            const highQuality = connections.filter(c => c.quality >= 4).length;
+            const lowQuality = connections.filter(c => c.quality <= 2).length;
+            
+            const statuses = connections.reduce((acc, c) => {
+                acc[c.status] = (acc[c.status] || 0) + 1;
+                return acc;
+            }, {});
+            
+            const platforms = connections.reduce((acc, c) => {
+                acc[c.platform] = (acc[c.platform] || 0) + 1;
+                return acc;
+            }, {});
+
+            const dataContext = `
+Data Summary:
+- Total connections logged: ${total} out of goal ${GOAL}.
+- High quality (4-5): ${highQuality}
+- Low quality (1-2): ${lowQuality}
+- Status breakdown: ${JSON.stringify(statuses)}
+- Platform breakdown: ${JSON.stringify(platforms)}
+
+Recent connections context (max 5):
+${JSON.stringify(connections.slice(-5).map(c => ({name: c.name, role: c.details, status: c.status, quality: c.quality})))}
+            `;
+
+            let userPrompt = "";
+            let systemPrompt = "You are an analytical AI assistant specialized in professional networking strategy. Provide concise, actionable insights formatted cleanly for a terminal-like interface. Use bullet points or short paragraphs. Avoid overly wordy introductions.";
+
+            if (type === 'summary') {
+                userPrompt = `Based on the following networking data, provide a brief summary of my progress. Tell me what I'm doing well (e.g., favored platforms) and where I stand regarding my goal.\n\n${dataContext}`;
+            } else if (type === 'followups') {
+                userPrompt = `Based on the following networking data, identify strategies for follow-ups. Specifically look at the status breakdown and suggest concrete next steps for connections in 'Awaiting Reply' or 'Follow-up' states.\n\n${dataContext}`;
+            } else if (type === 'feedback') {
+                userPrompt = `Analyze the quality of my connections based on the following data. Give me constructive feedback on my targeting strategy (am I getting high or low quality connects) and suggest how to improve the synergy of my network.\n\n${dataContext}`;
+            }
+
+            try {
+                const insight = await callGemini(userPrompt, systemPrompt);
+                // Format the output slightly for the terminal look
+                const formattedInsight = insight.replace(/\n/g, '<br>').replace(/\*/g, '<span class="text-indigo-300">*</span>');
+                contentEl.innerHTML = `> Analysis Complete.<br><br><span class="text-slate-300">${formattedInsight}</span>`;
+            } catch (error) {
+                contentEl.innerHTML = `<span class="text-rose-400">> ERROR: Failed to connect to AI analysis core. Try again later.</span>`;
+            }
+        }
 
         // Start the app!
         window.onload = initApp;
