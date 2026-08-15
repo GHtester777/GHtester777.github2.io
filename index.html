@@ -4,437 +4,332 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART Networking Goal Tracker</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Adding SheetJS for Excel export functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-        }
-
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px;
-            max-height: 400px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
-        .tab-active {
-            border-bottom: 3px solid #10b981;
-            color: #064e3b;
-            font-weight: 700;
-        }
-
-        .card-shadow {
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        
-        .pulse-anim {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
-        }
-
-        .spinner {
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            -webkit-animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-          to { -webkit-transform: rotate(360deg); }
-        }
-        @-webkit-keyframes spin {
-          to { -webkit-transform: rotate(360deg); }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; }
+        .chart-container { position: relative; width: 100%; height: 280px; margin: 0 auto; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; border: 2px solid transparent; background-clip: padding-box; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+        .tab-active { border-bottom: 3px solid #10b981; color: #064e3b; font-weight: 700; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .card-shadow:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .pulse-anim { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .spin-slow { animation: spin 3s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-active:active { transform: scale(0.96); }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="antialiased min-h-screen flex flex-col selection:bg-emerald-200 selection:text-emerald-900">
 
-    <div class="min-h-screen flex flex-col">
-        <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16 items-center">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-emerald-600 rounded flex items-center justify-center text-white font-bold">N</div>
-                        <span class="text-xl font-bold tracking-tight text-slate-900 hidden sm:block">NetGrowth 2026</span>
+    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-emerald-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                     </div>
-                    <div class="flex space-x-4 md:space-x-8">
-                        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-1 py-4 text-sm font-medium transition-all tab-active">Dashboard</button>
-                        <button onclick="switchTab('log')" id="tab-log" class="px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">Daily Log</button>
-                        <button onclick="switchTab('templates')" id="tab-templates" class="hidden md:block px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">Templates</button>
-                        <button onclick="switchTab('ai')" id="tab-ai" class="hidden md:block px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600">AI Insights</button>
-                        <button onclick="switchTab('vault')" id="tab-vault" class="px-1 py-4 text-sm font-medium transition-all text-slate-500 hover:text-emerald-600 flex items-center space-x-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
-                            <span class="hidden sm:inline">Data Vault</span>
-                        </button>
-                    </div>
-                    <div id="sync-status" class="flex items-center space-x-1.5 bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors">
-                        <svg id="sync-icon" class="w-3.5 h-3.5 pulse-anim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        <span id="sync-text">Connecting...</span>
-                    </div>
+                    <span class="text-xl font-extrabold tracking-tight text-slate-900 hidden sm:block">Elevation 2026<span class="text-emerald-600">.</span></span>
+                </div>
+                
+                <nav class="flex space-x-2 md:space-x-6 overflow-x-auto custom-scrollbar">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-2 py-4 text-sm font-semibold transition-all tab-active whitespace-nowrap">Dashboard</button>
+                    <button onclick="switchTab('log')" id="tab-log" class="px-2 py-4 text-sm font-semibold transition-all text-slate-500 hover:text-emerald-600 whitespace-nowrap">Daily Log</button>
+                    <button onclick="switchTab('templates')" id="tab-templates" class="px-2 py-4 text-sm font-semibold transition-all text-slate-500 hover:text-emerald-600 whitespace-nowrap hidden sm:block">Templates</button>
+                    <button onclick="switchTab('vault')" id="tab-vault" class="px-2 py-4 text-sm font-semibold transition-all text-slate-500 hover:text-emerald-600 whitespace-nowrap">Vault</button>
+                </nav>
+
+                <div id="sync-status" class="hidden sm:flex items-center space-x-1.5 bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full text-xs font-bold transition-colors shadow-sm">
+                    <svg id="sync-icon" class="w-3.5 h-3.5 pulse-anim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span id="sync-text">Connecting...</span>
                 </div>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <section class="mb-8 text-center md:text-left bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-8 sm:p-10 rounded-2xl text-white shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+            <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
             
-            <section class="mb-10 text-center md:text-left bg-gradient-to-r from-slate-900 to-slate-800 p-8 rounded-2xl text-white shadow-xl">
-                <h1 class="text-2xl md:text-3xl font-bold mb-2">Professional Networking Sprint</h1>
-                <p class="text-slate-300 max-w-3xl text-lg leading-relaxed">
-                    "Make 5 meaningful professional connections every day for 14 days to build 70 high-value relationships and expand my network with consistent, intentional outreach."
-                </p>
-                <div class="mt-6 flex flex-wrap gap-4 justify-center md:justify-start">
-                    <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg border border-white/20">
-                        <span class="block text-xs uppercase tracking-wider text-slate-400">Total Goal</span>
-                        <span class="text-xl font-bold">70 Connections</span>
+            <div class="relative z-10">
+                <div class="flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
+                    <div class="max-w-3xl">
+                        <h1 class="text-3xl md:text-4xl font-extrabold mb-3 tracking-tight">Road to Elevation 2026</h1>
+                        <p class="text-slate-300 text-base md:text-lg leading-relaxed font-light">
+                            "By November 14, 2026, I will share our amazing membership and lifestyle ambassador opportunity with at least one person every day to grow your business and organization. I will track each outreach in a daily log to ensure consistency and measure progress, aiming for more than 450 meaningful touches before the event."
+                        </p>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg border border-white/20">
-                        <span class="block text-xs uppercase tracking-wider text-slate-400">Timeframe</span>
-                        <span class="text-xl font-bold">14 Days</span>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg border border-white/20">
-                        <span class="block text-xs uppercase tracking-wider text-slate-400">Daily Target</span>
-                        <span class="text-xl font-bold">5 per day</span>
-                    </div>
-                </div>
-            </section>
-
-            <div id="view-dashboard" class="space-y-8 animate-in fade-in duration-500">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
-                        <h3 class="text-slate-500 text-sm font-medium">Total Progress</h3>
-                        <p class="text-3xl font-bold text-slate-900 mt-2" id="stat-total">0</p>
-                        <div class="mt-2 text-xs font-semibold text-emerald-600" id="stat-pct">0% of Goal</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
-                        <h3 class="text-slate-500 text-sm font-medium">Daily Average</h3>
-                        <p class="text-3xl font-bold text-slate-900 mt-2" id="stat-avg">0.0</p>
-                        <div class="mt-2 text-xs font-semibold text-slate-400">Connections / Day</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
-                        <h3 class="text-slate-500 text-sm font-medium">Days Elapsed</h3>
-                        <p class="text-3xl font-bold text-slate-900 mt-2" id="stat-days">0</p>
-                        <div class="mt-2 text-xs font-semibold text-slate-400">Out of 14 Days</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
-                        <h3 class="text-slate-500 text-sm font-medium">Remaining</h3>
-                        <p class="text-3xl font-bold text-emerald-600 mt-2" id="stat-rem">70</p>
-                        <div class="mt-2 text-xs font-semibold text-slate-400">To Reach Milestone</div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Chart 1: Progress Gauge -->
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4 text-center">Overall Goal Completion</h3>
-                        <div class="chart-container">
-                            <canvas id="progressChart"></canvas>
-                        </div>
-                        <p class="mt-4 text-sm text-slate-500 text-center">Visual representation of your journey toward 70 connections.</p>
-                    </div>
-
-                    <!-- Chart 2: Daily Performance -->
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4 text-center">Daily Connection Velocity</h3>
-                        <div class="chart-container">
-                            <canvas id="velocityChart"></canvas>
-                        </div>
-                        <p class="mt-4 text-sm text-slate-500 text-center">Monitoring the 5-connection-per-day threshold.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="view-log" class="hidden space-y-6 animate-in fade-in duration-500">
-                <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-800">Connection Activity Log</h3>
-                            <p class="text-sm text-slate-500">Detailed record of every professional outreach performed.</p>
-                        </div>
-                        <div class="flex items-center space-x-3 w-full md:w-auto">
-                            <button onclick="removeConnection()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-5 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors border border-rose-200 flex-1 md:flex-none">
-                                <span>-</span> <span>Remove Last</span>
-                            </button>
-                            <button onclick="openModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors flex-1 md:flex-none">
-                                <span>+</span> <span>Log Connection</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left border-collapse min-w-[700px]">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200">
-                                    <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Contact</th>
-                                    <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Company/Role</th>
-                                    <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Platform</th>
-                                    <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Quality</th>
-                                    <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="log-table-body" class="divide-y divide-slate-100">
-                                <!-- Dynamic Content Injected Here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="view-templates" class="hidden animate-in fade-in duration-500">
-                <div class="mb-8">
-                    <h3 class="text-xl font-bold text-slate-800">Outreach Message Vault</h3>
-                    <p class="text-slate-500">Proven scripts for different professional scenarios. Click to copy.</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl border border-slate-200 card-shadow mb-8 relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                            <h3 class="text-xl font-bold text-slate-800">AI Outreach Draft Generator</h3>
-                        </div>
-                    </div>
-                    <p class="text-slate-600 mb-4">Provide some details about the person you want to connect with, and the AI will generate a personalized outreach message.</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target Persona / Details</label>
-                            <textarea id="ai-draft-context" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="e.g. Senior PM at Google, wrote an article about AI in product management. I want to discuss their thoughts on the future of PM."></textarea>
-                        </div>
-                        <div class="flex flex-col">
-                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tone</label>
-                             <select id="ai-draft-tone" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none mb-4 text-sm">
-                                <option value="professional">Professional & Direct</option>
-                                <option value="friendly">Friendly & Casual</option>
-                                <option value="enthusiastic">Enthusiastic & Admiring</option>
-                             </select>
-                             <button id="btn-generate-draft" onclick="generateAIDraft()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2 mt-auto">
-                                <span>Generate Draft</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="ai-draft-result-container" class="hidden border border-indigo-100 bg-indigo-50/50 p-4 rounded-lg relative">
-                        <h4 class="text-xs font-bold text-indigo-800 uppercase mb-2">Generated Draft</h4>
-                        <p id="ai-draft-result" class="text-slate-700 text-sm whitespace-pre-wrap"></p>
-                        <button onclick="copyAIDraft()" class="absolute top-4 right-4 text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 px-2 py-1 rounded text-xs font-semibold shadow-sm flex items-center space-x-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            <span>Copy</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="template-container">
-                    <!-- Templates injected here -->
-                </div>
-            </div>
-
-            <div id="view-ai" class="hidden animate-in fade-in duration-500 space-y-6">
-                <div class="mb-4">
-                    <h3 class="text-xl font-bold text-slate-800">AI Networking Insights</h3>
-                    <p class="text-slate-500">Analyze your networking data to discover patterns, get strategic advice, and generate follow-up recommendations.</p>
+                    <button onclick="openModal()" class="btn-active shrink-0 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 px-6 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all flex items-center space-x-2 group">
+                        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                        <span>Log Connection</span>
+                    </button>
                 </div>
                 
-                <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col h-full">
-                    <div class="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
-                         <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                        </div>
+                <div class="mt-8 flex flex-wrap gap-3 justify-center md:justify-start">
+                    <div class="glass-panel px-5 py-3 rounded-xl flex items-center gap-3">
+                        <div class="bg-emerald-500/20 p-2 rounded-lg"><svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
                         <div>
-                            <h4 class="font-bold text-slate-800 text-lg">Network Analysis & Strategy</h4>
-                            <p class="text-slate-500 text-sm">Get AI-driven feedback on your progress and connection quality.</p>
+                            <span class="block text-[10px] uppercase tracking-widest text-slate-400 font-bold">Goal</span>
+                            <span class="text-xl font-bold">450</span>
                         </div>
                     </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <button onclick="generateInsights('summary')" class="bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 font-semibold py-3 px-4 rounded-lg transition-colors flex flex-col items-center justify-center text-center group">
-                            <span class="mb-1 text-lg group-hover:scale-110 transition-transform">📊</span>
-                            <span class="text-sm">Progress Summary</span>
-                        </button>
-                        <button onclick="generateInsights('followups')" class="bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 font-semibold py-3 px-4 rounded-lg transition-colors flex flex-col items-center justify-center text-center group">
-                            <span class="mb-1 text-lg group-hover:scale-110 transition-transform">🔄</span>
-                            <span class="text-sm">Follow-up Strategy</span>
-                        </button>
-                        <button onclick="generateInsights('feedback')" class="bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 font-semibold py-3 px-4 rounded-lg transition-colors flex flex-col items-center justify-center text-center group">
-                            <span class="mb-1 text-lg group-hover:scale-110 transition-transform">🎯</span>
-                            <span class="text-sm">Quality Analysis</span>
-                        </button>
+                    <div class="glass-panel px-5 py-3 rounded-xl flex items-center gap-3">
+                        <div class="bg-indigo-500/20 p-2 rounded-lg"><svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+                        <div>
+                            <span class="block text-[10px] uppercase tracking-widest text-slate-400 font-bold">Timeframe</span>
+                            <span class="text-xl font-bold">92 Days</span>
+                        </div>
                     </div>
+                    <div class="glass-panel px-5 py-3 rounded-xl flex items-center gap-3">
+                        <div class="bg-amber-500/20 p-2 rounded-lg"><svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
+                        <div>
+                            <span class="block text-[10px] uppercase tracking-widest text-slate-400 font-bold">Target</span>
+                            <span class="text-xl font-bold">5 / day</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-                    <div class="relative bg-slate-900 rounded-xl p-6 text-slate-200 min-h-[250px] shadow-inner font-mono text-sm leading-relaxed" id="ai-insight-terminal">
-                        <div class="flex items-center space-x-2 text-indigo-400 mb-4 border-b border-slate-700 pb-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            <span class="font-bold tracking-wider text-xs">AI_ASSISTANT_TERMINAL</span>
-                        </div>
-                        <div id="ai-insight-content" class="whitespace-pre-wrap">
-                            > Awaiting request... Click a button above to analyze your networking data.
+        <div id="view-dashboard" class="space-y-6 fade-in-up">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
+                    <h3 class="text-slate-500 text-sm font-bold flex items-center justify-between">
+                        Total Progress
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </h3>
+                    <div class="mt-4">
+                        <p class="text-4xl font-extrabold text-slate-900 tracking-tight" id="stat-total">0</p>
+                        <div class="mt-1 flex items-center gap-2">
+                            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div id="stat-progress-bar" class="h-full bg-emerald-500 w-0 transition-all duration-1000"></div>
+                            </div>
+                            <span class="text-xs font-bold text-emerald-600" id="stat-pct">0%</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- AI Chat Coach Section -->
-                <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col h-[500px]">
-                    <div class="flex items-center space-x-3 mb-2">
-                        <div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                        </div>
-                        <h4 class="font-bold text-slate-800 text-lg">Networking Coach Chat</h4>
+                <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between relative overflow-hidden">
+                    <h3 class="text-slate-500 text-sm font-bold">Daily Average</h3>
+                    <div class="mt-4">
+                        <p class="text-4xl font-extrabold text-slate-900 tracking-tight" id="stat-avg">0.0</p>
+                        <div class="mt-1 text-xs font-semibold text-slate-400" id="stat-avg-text">Connections / Day</div>
                     </div>
-                    <p class="text-slate-500 text-sm mb-4">Ask anything about your strategy, a specific contact, or how to write an email.</p>
-                    
-                    <div id="coach-chat-window" class="flex-grow overflow-y-auto bg-slate-50 rounded-lg p-4 mb-4 border border-slate-200 flex flex-col space-y-4 custom-scrollbar">
-                        <div class="bg-indigo-100 text-indigo-900 self-start p-3 rounded-lg rounded-tl-none max-w-[85%] text-sm shadow-sm">
-                            Hi! I'm your embedded AI networking coach. How can I help you today?
-                        </div>
+                    <svg class="absolute bottom-0 right-0 w-24 h-16 text-slate-50 opacity-50" viewBox="0 0 100 50" preserveAspectRatio="none"><path d="M0 50 L20 30 L40 40 L60 20 L80 35 L100 10 L100 50 Z" fill="currentColor"></path></svg>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
+                    <h3 class="text-slate-500 text-sm font-bold">Days Elapsed</h3>
+                    <div class="mt-4">
+                        <p class="text-4xl font-extrabold text-slate-900 tracking-tight"><span id="stat-days">0</span><span class="text-lg text-slate-400 font-medium">/92</span></p>
+                        <div class="mt-1 text-xs font-semibold text-slate-400">Of Sprint Period</div>
                     </div>
-                    
-                    <div class="flex space-x-2">
-                        <input type="text" id="coach-chat-input" class="flex-grow border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="e.g., How do I follow up with a CTO?" onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                        <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold transition-colors flex items-center justify-center shadow-md shadow-indigo-200">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                        </button>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
+                    <h3 class="text-slate-500 text-sm font-bold">Remaining</h3>
+                    <div class="mt-4">
+                        <p class="text-4xl font-extrabold text-emerald-600 tracking-tight" id="stat-rem">450</p>
+                        <div class="mt-1 text-xs font-semibold text-slate-400">To Reach Milestone</div>
                     </div>
                 </div>
             </div>
 
-            <div id="view-vault" class="hidden animate-in fade-in duration-500 space-y-6">
-                <div class="mb-4">
-                    <h3 class="text-xl font-bold text-slate-800">Data Vault & Cloud Backup</h3>
-                    <p class="text-slate-500">Manage your networking progress data securely.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 lg:col-span-1 flex flex-col items-center justify-center">
+                    <h3 class="text-lg font-bold text-slate-800 mb-2 w-full text-left">Goal Completion</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6 w-full text-left">Visual progress towards 450 touches.</p>
+                    <div class="chart-container !h-[220px]">
+                        <canvas id="progressChart"></canvas>
+                    </div>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
-                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        </div>
-                        <h4 class="font-bold text-slate-800 text-lg">Export Local Backup</h4>
-                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Download an Excel file containing all your logged connections. Perfect for importing into Notion, or keeping a hard offline copy.</p>
-                        <button onclick="exportData()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
-                            <span>Download .xlsx Backup</span>
+
+                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 lg:col-span-2 flex flex-col">
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">Daily Connection Velocity</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-4">Monitoring your daily outreach across the 92-day journey.</p>
+                    <div class="chart-container flex-grow">
+                        <canvas id="velocityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-log" class="hidden space-y-6 fade-in-up">
+            <div class="bg-white rounded-2xl card-shadow border border-slate-100 overflow-hidden flex flex-col">
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-900">Activity Log</h3>
+                        <p class="text-sm text-slate-500 font-medium mt-1">Detailed record of every professional outreach performed.</p>
+                    </div>
+                    <div class="flex items-center space-x-3 w-full md:w-auto">
+                        <button onclick="removeConnection()" class="btn-active bg-white hover:bg-rose-50 text-rose-600 px-4 py-2 rounded-xl font-bold transition-colors border border-rose-200 flex-1 md:flex-none flex items-center justify-center gap-2 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Undo Last</span>
+                        </button>
+                        <button onclick="openModal()" class="btn-active bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-bold transition-colors flex-1 md:flex-none flex items-center justify-center gap-2 shadow-md shadow-emerald-200">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                            <span>Log Entry</span>
                         </button>
                     </div>
+                </div>
 
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-slate-100 flex flex-col">
-                        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        </div>
-                        <h4 class="font-bold text-slate-800 text-lg">Import Local Backup</h4>
-                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">Upload a previously downloaded .xlsx backup file to restore or merge your networking data.</p>
-                        <input type="file" id="import-file" accept=".xlsx, .xls" class="hidden" onchange="importData(event)">
-                        <button onclick="document.getElementById('import-file').click()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
-                            <span>Upload .xlsx File</span>
-                        </button>
+                <div class="overflow-x-auto custom-scrollbar flex-grow bg-white">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-white">
+                                <th class="px-6 py-4 text-xs font-extrabold text-slate-400 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-4 text-xs font-extrabold text-slate-400 uppercase tracking-wider">Contact Name</th>
+                                <th class="px-6 py-4 text-xs font-extrabold text-slate-400 uppercase tracking-wider">Role / Company</th>
+                                <th class="px-6 py-4 text-xs font-extrabold text-slate-400 uppercase tracking-wider">Platform</th>
+                                <th class="px-6 py-4 text-xs font-extrabold text-slate-400 uppercase tracking-wider text-center">Fit</th>
+                                <th class="px-6 py-4 text-xs font-extrabold text-slate-400 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-table-body" class="divide-y divide-slate-100">
+                            <!-- Dynamic Content Injected Here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-templates" class="hidden fade-in-up">
+            <div class="mb-4 flex items-center gap-2">
+                <h3 class="text-xl font-bold text-slate-800 tracking-tight">Canned Responses</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="template-container">
+                <!-- Templates injected here -->
+            </div>
+        </div>
+
+        <div id="view-vault" class="hidden fade-in-up space-y-6 max-w-4xl mx-auto mt-8">
+            <div class="text-center mb-8">
+                <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight">Data Vault</h3>
+                <p class="text-slate-500 font-medium mt-2">Securely manage your networking progress data across devices.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-8 rounded-3xl card-shadow border border-slate-100 flex flex-col items-center text-center group hover:border-blue-200 transition-colors">
+                    <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     </div>
+                    <h4 class="font-extrabold text-slate-900 text-lg mb-2">Export Local Backup</h4>
+                    <p class="text-slate-500 text-sm mb-8 flex-grow">Download an Excel file containing all your logged connections. Perfect for importing into Notion or keeping an offline copy.</p>
+                    <button onclick="exportData()" class="btn-active w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-slate-900/20">
+                        Download .xlsx
+                    </button>
+                </div>
 
-                    <div class="bg-white p-6 rounded-xl card-shadow border border-rose-100 flex flex-col">
-                        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-4">
+                <div class="bg-white p-8 rounded-3xl card-shadow border border-slate-100 flex flex-col items-center text-center group hover:border-purple-200 transition-colors">
+                    <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    </div>
+                    <h4 class="font-extrabold text-slate-900 text-lg mb-2">Import Local Backup</h4>
+                    <p class="text-slate-500 text-sm mb-8 flex-grow">Upload a previously downloaded .xlsx backup file to restore or merge your networking history.</p>
+                    <input type="file" id="import-file" accept=".xlsx, .xls" class="hidden" onchange="importData(event)">
+                    <button onclick="document.getElementById('import-file').click()" class="btn-active w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-purple-600/20">
+                        Upload .xlsx
+                    </button>
+                </div>
+
+                <div class="bg-white p-8 rounded-3xl card-shadow border border-rose-100 md:col-span-2 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-6">
+                    <div class="flex items-center gap-5">
+                        <div class="w-12 h-12 shrink-0 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </div>
-                        <h4 class="font-bold text-slate-800 text-lg">Start Fresh (Danger)</h4>
-                        <p class="text-slate-500 text-sm mt-2 mb-6 flex-grow">This will wipe all your logged connections from the cloud and this device. This action cannot be undone. Make sure you export a backup first.</p>
-                        <button onclick="clearAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-rose-200">
-                            <span>Wipe All Data</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-
-        <footer class="bg-slate-100 border-t border-slate-200 py-6">
-            <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-                Networking Strategy Tracker &bull; Designed for August 2026 Sprint
-            </div>
-        </footer>
-    </div>
-
-    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden card-shadow">
-            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <h4 id="modal-title" class="font-bold text-slate-800">New Connection Entry</h4>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
-                    <input id="input-date" type="date" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contact Name</label>
-                    <input id="input-name" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company / Role</label>
-                    <input id="input-details" type="text" placeholder="e.g. Innova Solutions, HR" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Platform</label>
-                    <select id="input-platform" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none">
-                        <option>LinkedIn</option>
-                        <option>Email</option>
-                        <option>Phone / Zoom</option>
-                        <option>In-Person</option>
-                        <option>X / Social</option>
-                    </select>
-                </div>
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-bold text-slate-500 uppercase">Quality (1-5)</label>
-                        <button type="button" onclick="autoRateConnection()" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Let AI evaluate the synergy">✨ Auto-Rate</button>
-                    </div>
-                    <input id="input-quality" type="range" min="1" max="5" value="3" class="w-full accent-emerald-600" oninput="document.getElementById('auto-rate-reason').classList.add('hidden')">
-                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-bold">
-                        <span>Low Fit</span>
-                        <span>Synergy</span>
-                    </div>
-                    <div id="auto-rate-reason" class="text-[10px] text-indigo-600 mt-2 hidden font-medium bg-indigo-50 p-2.5 rounded border border-indigo-100 leading-relaxed shadow-sm"></div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
-                    <select id="input-status" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none">
-                        <option>Awaiting Reply</option>
-                        <option>Meeting Booked</option>
-                        <option>Follow-up</option>
-                        <option>Polite Neutral</option>
-                    </select>
-                </div>
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-bold text-slate-500 uppercase">Notes / Drafts</label>
-                        <div class="flex space-x-1">
-                            <button type="button" onclick="generateContextualAI('icebreaker')" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Generate Icebreaker">✨ Icebreaker</button>
-                            <button type="button" onclick="generateContextualAI('agenda')" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Generate Coffee Chat Agenda">✨ Agenda</button>
-                            <button type="button" onclick="generateContextualAI('followup')" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors flex items-center shadow-sm" title="Generate Follow-up">✨ Follow-up</button>
+                        <div>
+                            <h4 class="font-extrabold text-slate-900 text-lg">Danger Zone: Wipe Data</h4>
+                            <p class="text-slate-500 text-sm mt-1 max-w-md">Permanently delete all logged connections from the cloud and this device. This cannot be undone.</p>
                         </div>
                     </div>
-                    <textarea id="input-notes" rows="3" placeholder="Jot down notes or let AI generate a draft here..." class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-slate-700"></textarea>
+                    <button onclick="clearAllData()" class="btn-active shrink-0 px-6 py-3 bg-white hover:bg-rose-50 text-rose-600 border-2 border-rose-200 rounded-xl font-bold transition-colors">
+                        Wipe Everything
+                    </button>
                 </div>
-                <button id="modal-save-btn" onclick="addConnection()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200 mt-2">
-                    Save to Log
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl scale-100 transition-transform">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <h4 id="modal-title" class="font-extrabold text-slate-900 text-lg">New Connection</h4>
+                <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Date</label>
+                        <input id="input-date" type="date" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 font-medium transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Platform</label>
+                        <select id="input-platform" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 font-medium appearance-none cursor-pointer transition-all">
+                            <option>LinkedIn</option>
+                            <option>Email</option>
+                            <option>Phone / Zoom</option>
+                            <option>In-Person</option>
+                            <option>X / Social</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Contact Name</label>
+                    <input id="input-name" type="text" placeholder="e.g. Jane Doe" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none font-medium transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Company / Role</label>
+                    <input id="input-details" type="text" placeholder="e.g. Acme Corp, Sr. Product Manager" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none font-medium transition-all">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 items-end">
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Quality (1-5)</label>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 h-[46px] flex items-center">
+                            <input id="input-quality" type="range" min="1" max="5" value="3" class="w-full accent-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Status</label>
+                        <select id="input-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-700 font-medium appearance-none cursor-pointer transition-all">
+                            <option>Awaiting Reply</option>
+                            <option>Meeting Booked</option>
+                            <option>Follow-up</option>
+                            <option>Polite Neutral</option>
+                            <option>Completed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Notes</label>
+                    </div>
+                    <textarea id="input-notes" rows="3" placeholder="Jot down notes..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm text-slate-700 resize-none transition-all"></textarea>
+                </div>
+                
+                <button id="modal-save-btn" onclick="addConnection()" class="btn-active w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-600/30 mt-2 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Save to Log</span>
                 </button>
             </div>
         </div>
@@ -445,19 +340,17 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- DATA & STATE ---
-        const GOAL = 70;
+        const GOAL = 450;
         const TARGET_DAILY = 5;
-        const START_DATE = new Date('2026-08-08T00:00:00');
+        const START_DATE_STR = '2026-08-14T00:00:00'; 
+        const START_DATE = new Date(START_DATE_STR);
+        const TOTAL_DAYS = 92;
         
-        let connections = []; // Will be loaded from Firebase
+        let connections = []; 
         let progressChart, velocityChart;
         let editConnectionId = null;
-
-        // Firebase variables
         let app, db, auth, userId, appId;
 
-        // Templates Data
         const templates = [
             { title: "Cold Outreach (Peer)", text: "Hi [Name], I've been following your work at [Company], especially your recent project on [Topic]. I'm a [Your Role] at [Your Company] navigating similar challenges. I’d love to connect and follow your journey here on [Platform]!" },
             { title: "Cold Outreach (Leader)", text: "Hi [Name], your recent insights on [Topic/Post/Article] really resonated with me. I'm currently focusing on [Your Focus Area] and admire the path you've built in this space. I’d love to connect and learn from your updates!" },
@@ -470,83 +363,53 @@
         async function initApp() {
             renderTemplates();
             initCharts();
-            
             try {
-                // Determine App ID and Config safely
                 appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-                
-                if (!firebaseConfig) {
-                    throw new Error("Missing Firebase Config - running in local demo mode");
-                }
+                if (!firebaseConfig) throw new Error("Missing Firebase Config");
 
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Authenticate User
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                else await signInAnonymously(auth);
                 
                 userId = auth.currentUser?.uid;
-                if (userId) {
-                    await loadFromCloud();
-                }
-
+                if (userId) await loadFromCloud();
             } catch (error) {
-                console.warn("Could not connect to Firebase. Using local mock data.", error);
-                // Load mock data if cloud fails
+                console.warn("Using local mock data.", error);
                 connections = [
-                    { id: 1, date: '2026-08-08', name: 'Jane Doe', details: 'TechCorp, Sr. PM', platform: 'LinkedIn', quality: 4, status: 'Awaiting Reply' },
-                    { id: 2, date: '2026-08-08', name: 'Mark Silas', details: 'WebDev Inc, Founder', platform: 'Email', quality: 5, status: 'Meeting Booked' }
+                    { id: 1, date: '2026-08-14', name: 'Jane Doe', details: 'TechCorp, Sr. PM', platform: 'LinkedIn', quality: 4, status: 'Awaiting Reply' },
+                    { id: 2, date: '2026-08-15', name: 'Mark Silas', details: 'WebDev Inc, Founder', platform: 'Email', quality: 5, status: 'Meeting Booked' }
                 ];
                 updateUI();
-                updateSyncUI('Offline Mode', 'bg-amber-100', 'text-amber-600', false);
+                updateSyncUI('Local Mode', 'bg-slate-200', 'text-slate-600', false);
             }
         }
 
         async function loadFromCloud() {
             if (!userId || !db) return;
-            
             try {
                 const docRef = doc(db, 'artifacts', appId, 'users', userId, 'networking_data', 'connections');
                 const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    connections = docSnap.data().list || [];
-                } else {
-                    // Start fresh if no data exists
-                    connections = [];
-                }
-                
+                if (docSnap.exists()) connections = docSnap.data().list || [];
                 updateUI();
-                updateSyncUI('Cloud Synced', 'bg-emerald-100', 'text-emerald-700', false);
+                updateSyncUI('Synced', 'bg-emerald-100', 'text-emerald-700', false);
             } catch (error) {
-                console.error("Error loading data:", error);
                 updateSyncUI('Sync Error', 'bg-rose-100', 'text-rose-700', false);
             }
         }
 
         async function saveToCloud() {
             if (!userId || !db) return;
-            
-            updateSyncUI('Syncing...', 'bg-blue-100', 'text-blue-600', true);
-            
+            updateSyncUI('Saving...', 'bg-blue-100', 'text-blue-600', true);
             try {
                 const docRef = doc(db, 'artifacts', appId, 'users', userId, 'networking_data', 'connections');
                 await setDoc(docRef, { list: connections });
-                
-                setTimeout(() => {
-                    updateSyncUI('Saved to Cloud', 'bg-emerald-100', 'text-emerald-700', false);
-                }, 800); // Artificial delay to show the saving animation nicely
-                
+                setTimeout(() => updateSyncUI('Synced', 'bg-emerald-100', 'text-emerald-700', false), 600);
             } catch (error) {
-                console.error("Error saving data:", error);
                 updateSyncUI('Save Failed', 'bg-rose-100', 'text-rose-700', false);
-                showMessage("Failed to save to cloud. Your data is only stored locally right now.");
             }
         }
 
@@ -554,36 +417,23 @@
             const container = document.getElementById('sync-status');
             const icon = document.getElementById('sync-icon');
             const textEl = document.getElementById('sync-text');
-            
-            // Clear old classes
-            container.className = `flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${bgClass} ${textClass}`;
+            if(!container) return;
+            container.className = `hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors shadow-sm ${bgClass} ${textClass}`;
             textEl.innerText = text;
-            
-            if (isAnimating) {
-                icon.classList.add('pulse-anim');
-            } else {
-                icon.classList.remove('pulse-anim');
-            }
-            
-            // Change Icon based on state
-            if (text.includes('Synced') || text.includes('Saved')) {
-                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>`;
-            } else if (text.includes('Error') || text.includes('Failed')) {
-                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
-            } else {
-                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>`;
-            }
+            if (isAnimating) icon.classList.add('spin-slow');
+            else icon.classList.remove('spin-slow');
+            if (text.includes('Synced')) icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>`;
+            else if (text.includes('Error') || text.includes('Failed')) icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            else icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>`;
         }
 
         function showMessage(msg) {
             const toast = document.createElement('div');
             toast.textContent = msg;
-            toast.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-5 py-3 rounded-lg shadow-xl z-[200] transition-opacity font-medium animate-in slide-in-from-bottom-4 duration-300';
+            toast.className = 'fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-2xl z-[200] font-bold text-sm fade-in-up flex items-center gap-3';
+            toast.innerHTML = `<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>${msg}`;
             document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         function updateUI() {
@@ -594,11 +444,7 @@
         function switchTab(tabId) {
             document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
             document.getElementById(`view-${tabId}`).classList.remove('hidden');
-
-            document.querySelectorAll('[id^="tab-"]').forEach(el => {
-                el.classList.remove('tab-active');
-                el.classList.add('text-slate-500');
-            });
+            document.querySelectorAll('[id^="tab-"]').forEach(el => { el.classList.remove('tab-active'); el.classList.add('text-slate-500'); });
             document.getElementById(`tab-${tabId}`).classList.add('tab-active');
             document.getElementById(`tab-${tabId}`).classList.remove('text-slate-500');
         }
@@ -606,15 +452,15 @@
         function renderTemplates() {
             const container = document.getElementById('template-container');
             container.innerHTML = templates.map((t, idx) => `
-                <div class="bg-white p-5 rounded-xl border border-slate-100 card-shadow flex flex-col">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-bold text-slate-800">${t.title}</h4>
-                        <span class="text-[10px] bg-slate-100 px-2 py-1 rounded uppercase text-slate-500 font-bold">Script ${idx + 1}</span>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 card-shadow flex flex-col group">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-extrabold text-slate-900 leading-tight">${t.title}</h4>
+                        <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-bold shrink-0">#${idx + 1}</span>
                     </div>
-                    <p class="text-sm text-slate-600 bg-slate-50 p-4 rounded-lg flex-grow mb-4 italic">"${t.text}"</p>
-                    <button onclick="copyToClipboard('${t.text.replace(/'/g, "\\'")}')" class="text-xs bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        <span>Copy to Clipboard</span>
+                    <p class="text-sm text-slate-600 bg-slate-50 p-4 rounded-xl flex-grow mb-5 leading-relaxed selection:bg-indigo-100">"${t.text}"</p>
+                    <button onclick="copyToClipboard('${t.text.replace(/'/g, "\\'")}')" class="btn-active w-full text-sm bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        <span>Copy Template</span>
                     </button>
                 </div>
             `).join('');
@@ -627,33 +473,23 @@
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            showMessage("Template copied to clipboard!");
+            showMessage("Copied to clipboard!");
         }
 
         function renderLog() {
             const tbody = document.getElementById('log-table-body');
-            
             if (connections.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500 text-sm">No connections logged yet. Click "Log Connection" to start tracking!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium bg-slate-50/50">No connections logged yet. Let's build that network!</td></tr>`;
                 return;
             }
-
-            tbody.innerHTML = connections.slice().reverse().map(c => `
-                <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="openEditModal(${c.id})" title="Click to edit">
-                    <td class="px-4 py-4 text-sm font-medium text-slate-500 whitespace-nowrap">${new Date(c.date + 'T12:00:00').toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</td>
-                    <td class="px-4 py-4 text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">${c.name}</td>
-                    <td class="px-4 py-4 text-xs text-slate-600 font-medium">${c.details || 'N/A'}</td>
-                    <td class="px-4 py-4 text-xs">
-                        <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 font-bold">${c.platform}</span>
-                    </td>
-                    <td class="px-4 py-4 text-center">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${getQualityColor(c.quality)} shadow-sm">
-                            ${c.quality}
-                        </span>
-                    </td>
-                    <td class="px-4 py-4 text-xs whitespace-nowrap">
-                         <span class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-100">${c.status}</span>
-                    </td>
+            tbody.innerHTML = [...connections].sort((a,b) => b.id - a.id).map(c => `
+                <tr class="hover:bg-emerald-50/50 transition-colors cursor-pointer group border-b border-slate-50 last:border-none" onclick="openEditModal(${c.id})" title="Edit entry">
+                    <td class="px-6 py-4 text-sm font-medium text-slate-500 whitespace-nowrap">${new Date(c.date + 'T12:00:00').toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</td>
+                    <td class="px-6 py-4 text-sm font-extrabold text-slate-900 group-hover:text-emerald-700 transition-colors">${c.name}</td>
+                    <td class="px-6 py-4 text-xs text-slate-600 font-medium">${c.details || '-'}</td>
+                    <td class="px-6 py-4 text-xs"><span class="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 font-bold">${c.platform}</span></td>
+                    <td class="px-6 py-4 text-center"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${getQualityColor(c.quality)} shadow-sm">${c.quality}</span></td>
+                    <td class="px-6 py-4 text-xs whitespace-nowrap"><span class="px-2.5 py-1 rounded-full ${getStatusColor(c.status)} font-bold border">${c.status}</span></td>
                 </tr>
             `).join('');
         }
@@ -665,28 +501,47 @@
             return 'bg-rose-100 text-rose-800';
         }
 
+        function getStatusColor(s) {
+            if (s.includes('Booked') || s.includes('Completed')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            if (s.includes('Awaiting')) return 'bg-amber-50 text-amber-700 border-amber-200';
+            if (s.includes('Follow-up')) return 'bg-blue-50 text-blue-700 border-blue-200';
+            return 'bg-slate-50 text-slate-600 border-slate-200';
+        }
+
         function updateDashboard() {
             const today = new Date();
-            const diffTime = Math.abs(today - START_DATE);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            // Clamp elapsed days between 1 and 14 for math purposes
-            const elapsed = Math.min(14, Math.max(1, diffDays));
+            const diffTime = today - START_DATE;
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays < 1) diffDays = 1;
+            const elapsed = Math.min(TOTAL_DAYS, diffDays);
 
             const total = connections.length;
-            const pct = Math.round((total / GOAL) * 100);
+            const pct = Math.min(100, Math.round((total / GOAL) * 100));
             const avg = (total / elapsed).toFixed(1);
             const rem = Math.max(0, GOAL - total);
 
             document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-pct').innerText = `${Math.min(100, pct)}% of Goal`;
+            document.getElementById('stat-pct').innerText = `${pct}%`;
+            document.getElementById('stat-progress-bar').style.width = `${pct}%`;
             document.getElementById('stat-avg').innerText = avg;
             document.getElementById('stat-days').innerText = elapsed;
             document.getElementById('stat-rem').innerText = rem;
-
+            
+            const avgEl = document.getElementById('stat-avg');
+            const avgText = document.getElementById('stat-avg-text');
+            if(parseFloat(avg) >= TARGET_DAILY) {
+                avgEl.classList.add('text-emerald-600');
+                avgText.innerHTML = `On Fire! 🔥`;
+            } else {
+                avgEl.classList.remove('text-emerald-600');
+                avgText.innerHTML = `Connections / Day`;
+            }
             if (progressChart) updateCharts();
         }
 
         function initCharts() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = "#64748b";
             const ctx1 = document.getElementById('progressChart').getContext('2d');
             const ctx2 = document.getElementById('velocityChart').getContext('2d');
 
@@ -694,312 +549,196 @@
                 type: 'doughnut',
                 data: {
                     labels: ['Completed', 'Remaining'],
-                    datasets: [{
-                        data: [0, GOAL],
-                        backgroundColor: ['#10b981', '#f1f5f9'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
+                    datasets: [{ data: [0, GOAL], backgroundColor: ['#10b981', '#f1f5f9'], borderWidth: 0, hoverOffset: 4 }]
                 },
                 options: {
-                    maintainAspectRatio: false,
-                    cutout: '80%',
-                    plugins: { legend: { position: 'bottom' } }
+                    responsive: true, maintainAspectRatio: false, circumference: 180, rotation: -90, cutout: '80%',
+                    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 8, displayColors: false } }
                 }
             });
 
             velocityChart = new Chart(ctx2, {
                 type: 'bar',
                 data: {
-                    labels: Array.from({length: 14}, (_, i) => `Day ${i+1}`),
+                    labels: Array.from({length: TOTAL_DAYS}, (_, i) => `Day ${i+1}`),
                     datasets: [{
-                        label: 'Daily Connections',
-                        data: Array(14).fill(0),
-                        backgroundColor: '#10b981',
-                        borderRadius: 6
+                        label: 'Connections', data: Array(TOTAL_DAYS).fill(0), backgroundColor: '#10b981', borderRadius: 4, barThickness: 'flex', maxBarThickness: 15
                     }, {
-                        label: 'Target (5)',
-                        data: Array(14).fill(5),
-                        type: 'line',
-                        borderColor: '#fbbf24',
-                        borderDash: [5, 5],
-                        fill: false,
-                        pointRadius: 0
+                        label: 'Target', data: Array(TOTAL_DAYS).fill(TARGET_DAILY), type: 'line', borderColor: '#fbbf24', borderDash: [5, 5], borderWidth: 2, fill: false, pointRadius: 0, pointHoverRadius: 0
                     }]
                 },
                 options: {
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, max: 10 } },
-                    plugins: { legend: { position: 'bottom' } }
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 12, grid: { color: '#f1f5f9', drawBorder: false } }, x: { grid: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 14 } } },
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 8 } }
                 }
             });
         }
 
         function updateCharts() {
             progressChart.data.datasets[0].data = [connections.length, Math.max(0, GOAL - connections.length)];
-            
-            const dailyCounts = Array(14).fill(0);
+            const dailyCounts = Array(TOTAL_DAYS).fill(0);
             connections.forEach(c => {
-                const d = new Date(c.date + 'T12:00:00'); // Normalize timezone
+                const d = new Date(c.date + 'T12:00:00');
                 const dayIdx = Math.floor((d - START_DATE) / (1000 * 60 * 60 * 24));
-                if (dayIdx >= 0 && dayIdx < 14) dailyCounts[dayIdx]++;
+                if (dayIdx >= 0 && dayIdx < TOTAL_DAYS) dailyCounts[dayIdx]++;
             });
             velocityChart.data.datasets[0].data = dailyCounts;
-
             progressChart.update();
             velocityChart.update();
         }
 
         function openModal() { 
             editConnectionId = null;
-            document.getElementById('modal-title').innerText = 'New Connection Entry';
-            document.getElementById('modal-save-btn').innerText = 'Save to Log';
-            
-            // Set default date to today
+            document.getElementById('modal-title').innerText = 'New Connection';
+            document.getElementById('modal-save-btn').innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg><span>Save to Log</span>';
             const now = new Date();
             const d = now.getDate().toString().padStart(2, '0');
             const m = (now.getMonth() + 1).toString().padStart(2, '0');
             const y = now.getFullYear();
             document.getElementById('input-date').value = `${y}-${m}-${d}`;
-
             document.getElementById('input-name').value = '';
             document.getElementById('input-details').value = '';
             document.getElementById('input-quality').value = 3;
             document.getElementById('input-status').selectedIndex = 0;
             document.getElementById('input-platform').selectedIndex = 0;
             document.getElementById('input-notes').value = '';
-            
-            document.getElementById('modal-overlay').classList.remove('hidden'); 
+            const modal = document.getElementById('modal-overlay');
+            modal.classList.remove('hidden'); 
+            setTimeout(() => modal.firstElementChild.classList.remove('scale-95', 'opacity-0'), 10);
         }
 
         function closeModal() { 
-            document.getElementById('modal-overlay').classList.add('hidden'); 
-            editConnectionId = null;
+            const modal = document.getElementById('modal-overlay');
+            modal.firstElementChild.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); editConnectionId = null; }, 200);
         }
 
         function openEditModal(id) {
             editConnectionId = id;
             const conn = connections.find(c => c.id === id);
             if (!conn) return;
-
-            document.getElementById('modal-title').innerText = 'Edit Connection Entry';
-            document.getElementById('modal-save-btn').innerText = 'Update Connection';
-
+            document.getElementById('modal-title').innerText = 'Edit Connection';
+            document.getElementById('modal-save-btn').innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg><span>Update Entry</span>';
             document.getElementById('input-date').value = conn.date;
             document.getElementById('input-name').value = conn.name;
-            document.getElementById('input-details').value = conn.details !== 'N/A' ? conn.details : '';
+            document.getElementById('input-details').value = conn.details !== '-' ? conn.details : '';
             document.getElementById('input-platform').value = conn.platform;
             document.getElementById('input-quality').value = conn.quality;
             document.getElementById('input-status').value = conn.status;
             document.getElementById('input-notes').value = conn.notes || '';
-
             document.getElementById('modal-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modal-overlay').firstElementChild.classList.remove('scale-95', 'opacity-0'), 10);
         }
 
         function addConnection() {
             const dateStr = document.getElementById('input-date').value;
             const name = document.getElementById('input-name').value.trim();
-            const details = document.getElementById('input-details').value.trim() || 'N/A';
+            const details = document.getElementById('input-details').value.trim() || '-';
             const platform = document.getElementById('input-platform').value;
             const quality = parseInt(document.getElementById('input-quality').value);
             const status = document.getElementById('input-status').value;
             const notes = document.getElementById('input-notes').value.trim();
 
-            if (!dateStr) {
-                showMessage("Please select a date.");
-                return;
-            }
-
-            if (!name) {
-                showMessage("Please enter a contact name.");
-                return;
-            }
+            if (!dateStr || !name) return showMessage("Date and Contact Name are required.");
 
             if (editConnectionId !== null) {
-                // Update
                 const index = connections.findIndex(c => c.id === editConnectionId);
                 if (index !== -1) {
-                    connections[index].date = dateStr;
-                    connections[index].name = name;
-                    connections[index].details = details;
-                    connections[index].platform = platform;
-                    connections[index].quality = quality;
-                    connections[index].status = status;
-                    connections[index].notes = notes; // Add notes to update
-                    
-                    // Sort connections by date after edit
-                    connections.sort((a, b) => new Date(a.date) - new Date(b.date));
-                    
-                    showMessage("Connection successfully updated.");
+                    connections[index] = { ...connections[index], date: dateStr, name, details, platform, quality, status, notes };
+                    showMessage("Entry updated.");
                 }
             } else {
-                // Add
                 const newId = connections.length > 0 ? Math.max(...connections.map(c => c.id)) + 1 : 1;
-                
-                const newConn = {
-                    id: newId,
-                    date: dateStr,
-                    name: name,
-                    details: details,
-                    platform: platform,
-                    quality: quality,
-                    status: status,
-                    notes: notes // Add notes to new connection
-                };
-
-                connections.push(newConn);
-                // Sort connections by date after adding
-                connections.sort((a, b) => new Date(a.date) - new Date(b.date));
-                
-                showMessage("Connection successfully added to log.");
+                connections.push({ id: newId, date: dateStr, name, details, platform, quality, status, notes });
+                const todayCount = connections.filter(c => c.date === dateStr).length;
+                if(todayCount >= TARGET_DAILY) triggerConfetti();
+                else showMessage("Entry added!");
             }
-            
             updateUI();
-            saveToCloud(); // Auto-save on mutation
+            saveToCloud();
             closeModal();
         }
 
         function removeConnection() {
             if (connections.length > 0) {
-                connections.pop();
+                const highestId = Math.max(...connections.map(c => c.id));
+                connections = connections.filter(c => c.id !== highestId);
                 updateUI();
-                saveToCloud(); // Auto-save on mutation
-                showMessage("Most recent connection removed.");
-            } else {
-                showMessage("No connections to remove.");
+                saveToCloud();
+                showMessage("Last entry removed.");
             }
         }
 
+        function triggerConfetti() {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#fbbf24', '#818cf8'] });
+            setTimeout(() => showMessage("Daily Target Reached! Awesome job!"), 500);
+        }
+
         function exportData() {
-            if(connections.length === 0) {
-                showMessage("No data available to export yet.");
-                return;
-            }
-            
-            // Use SheetJS to convert the JSON connections array into a proper Excel worksheet
+            if(connections.length === 0) return showMessage("No data to export.");
             const worksheet = window.XLSX.utils.json_to_sheet(connections);
             const workbook = window.XLSX.utils.book_new();
             window.XLSX.utils.book_append_sheet(workbook, worksheet, "Connections");
-            
-            // Trigger the download of the file
             window.XLSX.writeFile(workbook, `NetGrowth_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
-            
-            showMessage("Backup file downloaded successfully!");
+            showMessage("Backup downloaded.");
         }
 
         function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    // cellDates: true allows SheetJS to parse Excel date numbers as JS Date objects automatically
                     const workbook = window.XLSX.read(data, {type: 'array', cellDates: true});
-                    
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    
-                    // Convert sheet back to JSON objects, providing "" for empty cells
-                    const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-                    
+                    const jsonData = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
                     if (jsonData && jsonData.length > 0) {
                         let maxId = connections.length > 0 ? Math.max(...connections.map(c => c.id)) : 0;
-                        let importedCount = 0;
-                        
+                        let imported = 0;
                         jsonData.forEach(row => {
-                            // Helper to find case and space insensitive keys
-                            const getVal = (keyName) => {
-                                const foundKey = Object.keys(row).find(k => k.toLowerCase().replace(/[^a-z]/g, '') === keyName.toLowerCase());
-                                return foundKey ? row[foundKey] : "";
+                            const getVal = (key) => {
+                                const k = Object.keys(row).find(kx => kx.toLowerCase().replace(/[^a-z]/g, '') === key.toLowerCase());
+                                return k ? row[k] : "";
                             };
-
-                            const rawDate = getVal('date');
                             const name = getVal('name') || getVal('contact');
+                            const rawDate = getVal('date');
+                            if(!name || !rawDate) return;
+                            let dateStr = rawDate;
+                            if (rawDate instanceof Date) dateStr = rawDate.toISOString().split('T')[0];
+                            else if (typeof rawDate === 'number') dateStr = new Date(Math.round((rawDate - 25569) * 86400000)).toISOString().split('T')[0];
 
-                            if (rawDate && name) {
-                                let formattedDate = rawDate;
-                                
-                                // Robust Date parsing
-                                if (rawDate instanceof Date) {
-                                    const yyyy = rawDate.getFullYear();
-                                    const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
-                                    const dd = String(rawDate.getDate()).padStart(2, '0');
-                                    formattedDate = `${yyyy}-${mm}-${dd}`;
-                                } else if (typeof rawDate === 'number') {
-                                    // Fallback for Excel epoch numbers if cellDates misses it
-                                    const jsDate = new Date(Math.round((rawDate - 25569) * 86400000));
-                                    const yyyy = jsDate.getUTCFullYear();
-                                    const mm = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
-                                    const dd = String(jsDate.getUTCDate()).padStart(2, '0');
-                                    formattedDate = `${yyyy}-${mm}-${dd}`;
-                                } else if (typeof rawDate === 'string') {
-                                    const d = new Date(rawDate);
-                                    if (!isNaN(d.getTime())) {
-                                        const yyyy = d.getFullYear();
-                                        const mm = String(d.getMonth() + 1).padStart(2, '0');
-                                        const dd = String(d.getDate()).padStart(2, '0');
-                                        formattedDate = `${yyyy}-${mm}-${dd}`;
-                                    }
-                                }
-
-                                // Check for existing records to avoid exact duplicates
-                                const isDuplicate = connections.some(c => c.date === formattedDate && c.name.toLowerCase() === String(name).trim().toLowerCase());
-
-                                if (!isDuplicate) {
-                                    maxId++;
-                                    connections.push({
-                                        id: maxId,
-                                        date: formattedDate,
-                                        name: String(name).trim(),
-                                        details: String(getVal('details') || getVal('companyrole') || getVal('company') || 'N/A').trim(),
-                                        platform: String(getVal('platform') || 'LinkedIn').trim(),
-                                        quality: parseInt(getVal('quality')) || 3,
-                                        status: String(getVal('status') || 'Awaiting Reply').trim(),
-                                        notes: String(getVal('notes') || '').trim() // Support importing notes
-                                    });
-                                    importedCount++;
-                                }
+                            if (!connections.some(c => c.date === dateStr && c.name.toLowerCase() === String(name).toLowerCase())) {
+                                maxId++;
+                                connections.push({
+                                    id: maxId, date: dateStr, name: String(name).trim(),
+                                    details: String(getVal('details')||getVal('role')||'-').trim(),
+                                    platform: String(getVal('platform')||'LinkedIn').trim(),
+                                    quality: parseInt(getVal('quality')) || 3,
+                                    status: String(getVal('status')||'Awaiting Reply').trim(),
+                                    notes: String(getVal('notes')||'').trim()
+                                });
+                                imported++;
                             }
                         });
-
-                        if (importedCount > 0) {
-                            connections.sort((a, b) => new Date(a.date) - new Date(b.date));
-                            updateUI();
-                            saveToCloud();
-                            showMessage(`Successfully imported ${importedCount} new connections!`);
-                        } else {
-                            showMessage("No new valid connections found (or all were duplicates).");
-                        }
-                    } else {
-                        showMessage("No valid data found in the Excel file.");
+                        if (imported > 0) { updateUI(); saveToCloud(); showMessage(`Imported ${imported} new connections.`); }
+                        else showMessage("No new valid data found.");
                     }
-                } catch (error) {
-                    console.error("Import error:", error);
-                    showMessage("Failed to import file. Make sure it's a valid Excel backup.");
-                }
-                
+                } catch (err) { showMessage("Failed to import file."); }
                 event.target.value = '';
             };
-            
             reader.readAsArrayBuffer(file);
         }
 
         function clearAllData() {
-            if (connections.length === 0) {
-                showMessage("Vault is already empty.");
-                return;
-            }
-            // A pseudo-confirm using a custom modal would be better, but implementing via immediate action with clear instruction since alerts/confirms are banned.
+            if (connections.length === 0) return showMessage("Vault is empty.");
             connections = [];
             updateUI();
             saveToCloud();
-            showMessage("All data has been wiped. You're starting fresh!");
+            showMessage("All data wiped.");
             switchTab('dashboard');
         }
 
-        // Exposing functions to the window object so inline HTML event listeners can access them
         window.switchTab = switchTab;
         window.copyToClipboard = copyToClipboard;
         window.openModal = openModal;
@@ -1011,325 +750,6 @@
         window.importData = importData;
         window.clearAllData = clearAllData;
 
-        window.generateAIDraft = generateAIDraft;
-        window.copyAIDraft = copyAIDraft;
-        window.generateInsights = generateInsights;
-        window.generateContextualAI = generateContextualAI; // Expose new function
-
-        window.autoRateConnection = autoRateConnection;
-        window.sendChatMessage = sendChatMessage;
-
-        // --- AI INTEGRATION (GEMINI API) ---
-        const GEMINI_API_KEY = ""; // System will inject key here
-        
-        async function callGemini(prompt, systemInstruction = null) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
-            
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-            };
-
-            if (systemInstruction) {
-                payload.systemInstruction = {
-                    parts: [{ text: systemInstruction }]
-                };
-            }
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates[0].content?.parts[0]?.text) {
-                    return result.candidates[0].content.parts[0].text;
-                } else {
-                    console.error("Unexpected Gemini response structure:", result);
-                    throw new Error("Failed to parse AI response.");
-                }
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                throw error;
-            }
-        }
-
-        // Feature 1: Generate Outreach Draft
-        async function generateAIDraft() {
-            const context = document.getElementById('ai-draft-context').value.trim();
-            const tone = document.getElementById('ai-draft-tone').value;
-            const btn = document.getElementById('btn-generate-draft');
-            const resultContainer = document.getElementById('ai-draft-result-container');
-            const resultText = document.getElementById('ai-draft-result');
-
-            if (!context) {
-                showMessage("Please provide details about the person you want to contact.");
-                return;
-            }
-
-            // UI feedback
-            const originalBtnHtml = btn.innerHTML;
-            btn.innerHTML = `<div class="spinner w-4 h-4 mr-2"></div><span>Generating...</span>`;
-            btn.disabled = true;
-
-            const systemPrompt = `You are an expert career coach and networking strategist. Your task is to write a highly effective, concise, and personalized initial outreach message based on the user's provided context. Keep it under 150 words. Do not include subject lines. Output only the message content.`;
-            const userPrompt = `Write an outreach message based on this context: "${context}". The tone should be ${tone}.`;
-
-            try {
-                const draft = await callGemini(userPrompt, systemPrompt);
-                
-                resultText.innerText = draft;
-                resultContainer.classList.remove('hidden');
-                
-                // Animate entrance
-                resultContainer.classList.add('animate-in', 'fade-in', 'slide-in-from-top-4');
-            } catch (error) {
-                showMessage("Failed to generate draft. Please try again later.");
-            } finally {
-                btn.innerHTML = originalBtnHtml;
-                btn.disabled = false;
-            }
-        }
-
-        function copyAIDraft() {
-            const text = document.getElementById('ai-draft-result').innerText;
-            if (text) {
-                copyToClipboard(text);
-            }
-        }
-
-        // Feature 2: Generate Insights based on local data
-        async function generateInsights(type) {
-            const contentEl = document.getElementById('ai-insight-content');
-            
-            if (connections.length === 0) {
-                contentEl.innerHTML = `<span class="text-amber-400">> ERROR: Insufficient data. Log some connections first before requesting analysis.</span>`;
-                return;
-            }
-
-            contentEl.innerHTML = `<span class="text-indigo-300">> Analyzing networking data</span><span class="animate-pulse">...</span>`;
-
-            // Prepare data summary for the prompt
-            const total = connections.length;
-            const highQuality = connections.filter(c => c.quality >= 4).length;
-            const lowQuality = connections.filter(c => c.quality <= 2).length;
-            
-            const statuses = connections.reduce((acc, c) => {
-                acc[c.status] = (acc[c.status] || 0) + 1;
-                return acc;
-            }, {});
-            
-            const platforms = connections.reduce((acc, c) => {
-                acc[c.platform] = (acc[c.platform] || 0) + 1;
-                return acc;
-            }, {});
-
-            const dataContext = `
-Data Summary:
-- Total connections logged: ${total} out of goal ${GOAL}.
-- High quality (4-5): ${highQuality}
-- Low quality (1-2): ${lowQuality}
-- Status breakdown: ${JSON.stringify(statuses)}
-- Platform breakdown: ${JSON.stringify(platforms)}
-
-Recent connections context (max 5):
-${JSON.stringify(connections.slice(-5).map(c => ({name: c.name, role: c.details, status: c.status, quality: c.quality})))}
-            `;
-
-            let userPrompt = "";
-            let systemPrompt = "You are an analytical AI assistant specialized in professional networking strategy. Provide concise, actionable insights formatted cleanly for a terminal-like interface. Use bullet points or short paragraphs. Avoid overly wordy introductions.";
-
-            if (type === 'summary') {
-                userPrompt = `Based on the following networking data, provide a brief summary of my progress. Tell me what I'm doing well (e.g., favored platforms) and where I stand regarding my goal.\n\n${dataContext}`;
-            } else if (type === 'followups') {
-                userPrompt = `Based on the following networking data, identify strategies for follow-ups. Specifically look at the status breakdown and suggest concrete next steps for connections in 'Awaiting Reply' or 'Follow-up' states.\n\n${dataContext}`;
-            } else if (type === 'feedback') {
-                userPrompt = `Analyze the quality of my connections based on the following data. Give me constructive feedback on my targeting strategy (am I getting high or low quality connects) and suggest how to improve the synergy of my network.\n\n${dataContext}`;
-            }
-
-            try {
-                const insight = await callGemini(userPrompt, systemPrompt);
-                // Format the output slightly for the terminal look
-                const formattedInsight = insight.replace(/\n/g, '<br>').replace(/\*/g, '<span class="text-indigo-300">*</span>');
-                contentEl.innerHTML = `> Analysis Complete.<br><br><span class="text-slate-300">${formattedInsight}</span>`;
-            } catch (error) {
-                contentEl.innerHTML = `<span class="text-rose-400">> ERROR: Failed to connect to AI analysis core. Try again later.</span>`;
-            }
-        }
-
-        async function generateContextualAI(type) {
-            const name = document.getElementById('input-name').value.trim();
-            const role = document.getElementById('input-details').value.trim();
-            const notesField = document.getElementById('input-notes');
-
-            if (!name) {
-                showMessage("Please enter a Contact Name first so AI knows who to write to!");
-                return;
-            }
-
-            const originalVal = notesField.value;
-            notesField.value = "✨ AI is thinking...";
-            notesField.disabled = true;
-
-            const safeName = name || "this person";
-            const safeRole = role || "their company";
-
-            let prompt = "";
-            const sys = "You are a professional networking assistant. Provide a concise, highly usable text snippet. No conversational filler, just the exact output requested. Use formatting like bullet points if appropriate.";
-
-            if (type === 'icebreaker') prompt = `Write a friendly, 1-sentence icebreaker to send to ${safeName} who is at ${safeRole}.`;
-            if (type === 'agenda') prompt = `Write a short bulleted agenda (3 points max) for a 15-minute virtual coffee chat with ${safeName} (${safeRole}).`;
-            if (type === 'followup') prompt = `Write a short, polite 2-sentence follow-up message to ${safeName} (${safeRole}) checking in since they haven't replied.`;
-
-            try {
-                const res = await callGemini(prompt, sys);
-                const prefix = originalVal ? originalVal + "\n\n" : "";
-                const sectionTitle = type === 'icebreaker' ? "--- AI Icebreaker ---" : type === 'agenda' ? "--- AI Agenda ---" : "--- AI Follow-up ---";
-                notesField.value = prefix + sectionTitle + "\n" + res.trim();
-            } catch (e) {
-                notesField.value = originalVal;
-                showMessage("Failed to generate AI response. Make sure the API is connected.");
-            } finally {
-                notesField.disabled = false;
-            }
-        }
-
-        // --- NEW AI FEATURES ---
-        
-        // Structured Output using JSON Schema to Auto-Rate a connection
-        async function autoRateConnection() {
-            const name = document.getElementById('input-name').value.trim();
-            const details = document.getElementById('input-details').value.trim();
-            const platform = document.getElementById('input-platform').value;
-            const notes = document.getElementById('input-notes').value.trim();
-
-            if (!name && !details && !notes) {
-                showMessage("Please provide some details or notes first for the AI to analyze.");
-                return;
-            }
-
-            const btn = document.querySelector('button[onclick="autoRateConnection()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = 'Thinking...';
-            btn.disabled = true;
-
-            const payload = {
-                contents: [{ parts: [{ text: `Evaluate this networking connection.\nName: ${name}\nRole/Company: ${details}\nPlatform: ${platform}\nNotes: ${notes}` }] }],
-                systemInstruction: { parts: [{ text: "You are an expert networking coach. Rate the potential synergy and value of this professional connection on a scale of 1 to 5. Return JSON with 'score' (integer 1-5) and 'reason' (string, max 20 words)." }] },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            score: { type: "INTEGER" },
-                            reason: { type: "STRING" }
-                        },
-                        required: ["score", "reason"]
-                    }
-                }
-            };
-
-            try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates[0].content?.parts[0]?.text) {
-                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
-                    document.getElementById('input-quality').value = data.score;
-                    const reasonEl = document.getElementById('auto-rate-reason');
-                    reasonEl.innerHTML = `<strong>AI Rating (${data.score}/5):</strong> ${data.reason}`;
-                    reasonEl.classList.remove('hidden');
-                } else {
-                    throw new Error("Invalid response format");
-                }
-            } catch (e) {
-                console.error("Auto-rate error:", e);
-                showMessage("Failed to auto-rate connection.");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        // Multi-turn Chat Coach 
-        let coachChatHistory = [];
-
-        async function sendChatMessage() {
-            const inputEl = document.getElementById('coach-chat-input');
-            const text = inputEl.value.trim();
-            if (!text) return;
-
-            // Add user message to UI
-            appendChatMessage(text, 'user');
-            inputEl.value = '';
-
-            // Add user message to memory
-            coachChatHistory.push({ role: 'user', parts: [{ text }] });
-
-            // Show typing indicator
-            const typingId = appendChatMessage('...', 'coach');
-
-            // Inject current application state as context
-            const contextStr = `Current networking progress: ${connections.length}/${GOAL} connections logged. Recent connections: ${JSON.stringify(connections.slice(-3).map(c => c.name + " (" + c.details + ")"))}.`;
-            
-            const payload = {
-                contents: coachChatHistory,
-                systemInstruction: { parts: [{ text: `You are an expert networking and career coach embedded in a user's tracking app. Keep answers concise, actionable, and friendly. Limit responses to a few short paragraphs. Use basic markdown formatting (bullet points, bold). Context context: ${contextStr}` }] }
-            };
-
-            try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates[0].content?.parts[0]?.text) {
-                    const reply = result.candidates[0].content.parts[0].text;
-                    // Add model reply to memory
-                    coachChatHistory.push({ role: 'model', parts: [{ text: reply }] });
-                    
-                    document.getElementById(typingId).remove();
-                    appendChatMessage(reply, 'coach');
-                } else {
-                    throw new Error("Invalid response from Gemini");
-                }
-            } catch (e) {
-                console.error("Chat error:", e);
-                document.getElementById(typingId).innerText = 'Sorry, I encountered an error. Please check your connection.';
-                coachChatHistory.pop(); // Remove the user message from history so they can retry without breaking turn order
-            }
-        }
-
-        function appendChatMessage(text, sender) {
-            const windowEl = document.getElementById('coach-chat-window');
-            const id = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
-            const isUser = sender === 'user';
-            
-            const alignClass = isUser ? 'self-end' : 'self-start';
-            const colorClass = isUser ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-indigo-100 text-indigo-900 rounded-tl-none';
-            
-            // Basic markdown parsing for bold and newlines
-            const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-
-            // Using string concatenation to avoid template literal escapes in diff
-            const msgHtml = '<div id="' + id + '" class="' + alignClass + ' ' + colorClass + ' p-3 rounded-lg max-w-[85%] text-sm shadow-sm animate-in fade-in slide-in-from-bottom-2">' + formattedText + '</div>';
-            
-            windowEl.insertAdjacentHTML('beforeend', msgHtml);
-            windowEl.scrollTop = windowEl.scrollHeight;
-            return id;
-        }
-
-        // Start the app!
         window.onload = initApp;
     </script>
 </body>
